@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Los 6 · Intro</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bangers&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;cursor:none}
+#three-canvas{position:fixed;inset:0;z-index:0;opacity:0}
+#flash{position:fixed;inset:0;z-index:9999;opacity:0;pointer-events:none;background:#fff}
+#flip-stage{position:fixed;inset:0;z-index:10;overflow:hidden}
+.panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;visibility:hidden;overflow:hidden;will-change:transform,opacity}
+.p-dots{position:absolute;inset:0}
+.p-rays{position:absolute;width:240%;height:240%;left:-70%;top:-70%;pointer-events:none}
+.p-border{position:absolute;inset:0;z-index:6;pointer-events:none}
+.p-inner{position:absolute;inset:7px;border:2px solid rgba(255,255,255,0.08);z-index:6;pointer-events:none}
+.p-name{position:relative;z-index:4;font-family:'Bebas Neue',sans-serif;font-size:clamp(18vw,25vw,320px);letter-spacing:-2px;line-height:0.82;text-align:center;-webkit-text-stroke:clamp(5px,1vw,13px) #000;paint-order:stroke fill;will-change:transform}
+.p-name-shadow{position:absolute;z-index:3;font-family:'Bebas Neue',sans-serif;font-size:clamp(18vw,25vw,320px);letter-spacing:-2px;line-height:0.82;text-align:center;color:#000!important;-webkit-text-stroke:0!important;top:8px;left:8px;pointer-events:none;opacity:0.5}
+.p-sfx{position:absolute;font-family:'Bangers',sans-serif;font-size:clamp(2.5rem,7vw,6rem);letter-spacing:3px;z-index:8;-webkit-text-stroke:3px #000;paint-order:stroke fill;text-shadow:4px 4px 0 #000;transform-origin:center;will-change:transform}
+.rivet{position:absolute;width:22px;height:22px;border-radius:50%;border:3px solid rgba(0,0,0,0.6);z-index:8}
+.rivet.tl{top:14px;left:14px}.rivet.tr{top:14px;right:14px}.rivet.bl{bottom:14px;left:14px}.rivet.br{bottom:14px;right:14px}
+.p-num{position:absolute;bottom:18px;right:20px;font-family:'Space Mono',monospace;font-size:0.48rem;letter-spacing:5px;color:rgba(0,0,0,0.4);z-index:8}
+
+/* ═══ LOGO SCREEN ═══ */
+#logo-screen{
+  position:fixed;inset:0;z-index:500;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  visibility:hidden;overflow:hidden;
+  background:#0d0d0d;
+}
+/* Dot grid */
+#logo-dots{
+  position:absolute;inset:0;z-index:1;
+  background-image:radial-gradient(circle,rgba(255,255,255,0.06) 1px,transparent 1px);
+  background-size:18px 18px;
+  opacity:0;
+}
+/* Círculos oscuros decorativos (igual que la imagen) */
+#logo-circle-l{
+  position:absolute;
+  width:min(70vw,600px);height:min(70vw,600px);
+  border-radius:50%;
+  background:radial-gradient(circle at 40% 40%,#1a1a1a,#080808);
+  left:-15%;top:50%;transform:translateY(-50%);
+  z-index:2;opacity:0;
+}
+#logo-circle-r{
+  position:absolute;
+  width:min(55vw,480px);height:min(55vw,480px);
+  border-radius:50%;
+  background:radial-gradient(circle at 60% 60%,#151515,#060606);
+  right:-10%;top:50%;transform:translateY(-50%);
+  z-index:2;opacity:0;
+}
+/* "6" fantasma enorme de fondo */
+#logo-ghost-6{
+  position:absolute;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(55vw,75vw,900px);
+  color:transparent;
+  -webkit-text-stroke:clamp(2px,0.35vw,5px) rgba(201,168,76,0.18);
+  line-height:1;
+  bottom:-15%;right:-5%;
+  z-index:3;pointer-events:none;
+  opacity:0;
+  letter-spacing:0;
+}
+/* Canvas de rayos */
+#logo-rays-canvas{position:absolute;width:100%;height:100%;z-index:2;opacity:0}
+/* Caja principal del título — el rectángulo con borde dorado */
+#logo-box{
+  position:relative;z-index:6;
+  border:3px solid #c9a84c;
+  padding:clamp(12px,2.5vw,28px) clamp(20px,4vw,50px);
+  opacity:0;
+  clip-path:inset(0 100% 0 0);
+  background:rgba(5,5,5,0.5);
+}
+/* Líneas horizontales encima del texto (efecto de la imagen) */
+#logo-box::before{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,
+    transparent,transparent 10px,
+    rgba(255,255,255,0.025) 10px,rgba(255,255,255,0.025) 11px);
+  pointer-events:none;z-index:0;
+}
+/* Borde interior fino */
+#logo-box::after{
+  content:'';position:absolute;
+  inset:5px;
+  border:1px solid rgba(201,168,76,0.2);
+  pointer-events:none;
+}
+#logo-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(18vw,23vw,300px);
+  letter-spacing:clamp(4px,1.5vw,20px);
+  color:#fff;
+  line-height:0.88;
+  text-align:center;
+  position:relative;z-index:1;
+  /* Borde dorado sutil igual que la imagen */
+  -webkit-text-stroke:clamp(1px,0.2vw,3px) rgba(201,168,76,0.5);
+  paint-order:stroke fill;
+  text-shadow:0 2px 0 rgba(0,0,0,0.8);
+}
+/* Segunda capa del título — el offset dorado que se ve en la imagen */
+#logo-title-shadow{
+  position:absolute;inset:0;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(18vw,23vw,300px);
+  letter-spacing:clamp(4px,1.5vw,20px);
+  color:transparent;
+  -webkit-text-stroke:clamp(1px,0.2vw,3px) rgba(201,168,76,0.4);
+  line-height:0.88;text-align:center;
+  top:5px;left:5px;z-index:0;pointer-events:none;
+}
+/* Línea divisora dorada */
+#logo-divider{
+  width:0;height:2px;
+  background:linear-gradient(90deg,transparent 0%,#c9a84c 20%,#e8d5a0 50%,#c9a84c 80%,transparent 100%);
+  margin:clamp(10px,1.8vw,20px) 0 0;
+  box-shadow:0 0 20px rgba(201,168,76,0.6),0 0 50px rgba(201,168,76,0.2);
+  opacity:0;
+}
+/* Subtítulo "BOGOTÁ · 2026" */
+#logo-sub{
+  font-family:'Space Mono',monospace;
+  font-size:clamp(0.4rem,1.2vw,0.8rem);
+  letter-spacing:clamp(8px,1.5vw,18px);
+  color:#c9a84c;
+  text-transform:uppercase;
+  margin-top:clamp(8px,1.2vw,14px);
+  opacity:0;
+  text-shadow:0 0 20px rgba(201,168,76,0.5);
+}
+.splat{position:absolute;border-radius:50%;background:#000;transform:scale(0);z-index:4;pointer-events:none}
+#scanlines{position:absolute;inset:0;z-index:9;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.06) 3px,rgba(0,0,0,0.06) 4px);pointer-events:none;opacity:0}
+#vignette{position:absolute;inset:0;z-index:8;background:radial-gradient(ellipse 80% 70% at 50% 50%,transparent 20%,rgba(0,0,0,0.8) 100%);pointer-events:none;opacity:0}
+/* Esquinas decorativas */
+.cdeco{position:absolute;z-index:11;opacity:0}
+.cdeco::before,.cdeco::after{content:'';position:absolute;background:#c9a84c}
+.cdeco::before{width:4px;height:50px}
+.cdeco::after{width:50px;height:4px}
+#c-tl{top:20px;left:20px}
+#c-tr{top:20px;right:20px;transform:scaleX(-1)}
+#c-bl{bottom:20px;left:20px;transform:scaleY(-1)}
+#c-br{bottom:20px;right:20px;transform:scale(-1,-1)}
+/* Punto decorativo arriba izquierda como en la imagen */
+#logo-dot{
+  position:absolute;top:clamp(16px,3vw,30px);left:clamp(16px,3vw,30px);
+  width:10px;height:10px;border-radius:50%;
+  background:#fff;z-index:12;opacity:0;
+}
+#cursor{position:fixed;width:12px;height:12px;background:#fff;border-radius:50%;pointer-events:none;z-index:99999;mix-blend-mode:difference;transform:translate(-50%,-50%);transition:width 0.1s,height 0.1s}
+#skip-btn{position:fixed;bottom:28px;right:28px;font-family:'Space Mono',monospace;font-size:0.5rem;letter-spacing:5px;color:rgba(255,255,255,0.25);z-index:9000;cursor:pointer;text-transform:uppercase;opacity:0;padding:8px 14px;border:1px solid rgba(255,255,255,0.1)}
+#skip-btn:hover{color:rgba(255,255,255,0.7);border-color:rgba(255,255,255,0.3)}
+</style>
+</head>
+<body>
+<canvas id="three-canvas"></canvas>
+<div id="flash"></div>
+<div id="cursor"></div>
+
+<!-- YouTube audio invisible -->
+<div id="yt-audio" style="position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1"></div>
+<div id="flip-stage"></div>
+
+<div id="logo-screen">
+  <div id="logo-dots"></div>
+  <canvas id="logo-rays-canvas"></canvas>
+  <div id="logo-circle-l"></div>
+  <div id="logo-circle-r"></div>
+  <div id="logo-ghost-6">6</div>
+  <div id="scanlines"></div>
+  <div id="vignette"></div>
+  <div id="c-tl" class="cdeco"></div>
+  <div id="c-tr" class="cdeco"></div>
+  <div id="c-bl" class="cdeco"></div>
+  <div id="c-br" class="cdeco"></div>
+  <div id="logo-dot"></div>
+
+  <div id="logo-box">
+    <div id="logo-title-shadow">LOS 6</div>
+    <div id="logo-title">LOS 6</div>
+  </div>
+  <div id="logo-divider"></div>
+  <div id="logo-sub">B O G O T&Aacute; &nbsp;·&nbsp; 2 0 2 6</div>
+</div>
+<div id="skip-btn">SKIP ›</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// AUDIO — YouTube IFrame API (Marvel Comics Intro)
+// Video: https://youtu.be/Ok5PXdmQV-s
+// ══════════════════════════════════════════════════════════════
+let ytPlayer = null;
+let ytReady = false;
+let playRequested = false;
+
+// Cargar la API de YouTube
+(function loadYTApi() {
+  const tag = document.createElement('script');
+  tag.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(tag);
+})();
+
+function onYouTubeIframeAPIReady() {
+  ytPlayer = new YT.Player('yt-audio', {
+    videoId: 'Ok5PXdmQV-s',
+    playerVars: {
+      autoplay: 0,
+      controls: 0,
+      disablekb: 1,
+      fs: 0,
+      iv_load_policy: 3,
+      modestbranding: 1,
+      playsinline: 1,
+      rel: 0,
+      start: 0
+    },
+    events: {
+      onReady: function(e) {
+        ytReady = true;
+        e.target.setVolume(90);
+        if (playRequested) startYTAudio();
+      }
+    }
+  });
+}
+
+function startYTAudio() {
+  if (!ytPlayer || !ytReady) { playRequested = true; return; }
+  // Truco iOS: mute → play → unmute en el mismo gesto
+  ytPlayer.mute();
+  ytPlayer.playVideo();
+  setTimeout(() => { ytPlayer.unMute(); ytPlayer.setVolume(90); }, 300);
+}
+
+// triggerPanelSound se llama en showNext() — no necesitamos nada aquí
+function triggerPanelSound(ms, panelIndex) {}
+
+// CURSOR
+const cursor=document.getElementById('cursor');
+document.addEventListener('mousemove',e=>{cursor.style.left=e.clientX+'px';cursor.style.top=e.clientY+'px'});
+
+// PERSONAS
+const PEOPLE=[
+  {name:'ELI',   col:'#FFD700',acc:'#FF6B00',bg:'#180a00',dot:'rgba(255,140,0,0.3)',  sfx:'EPICA!',  sfxC:'#FFD700'},
+  {name:'PAEZ',  col:'#FF3333',acc:'#CC0000',bg:'#1e0000',dot:'rgba(255,30,30,0.25)', sfx:'BOOM!',   sfxC:'#FF3333'},
+  {name:'SANTI', col:'#33FFD4',acc:'#00AA88',bg:'#001812',dot:'rgba(0,220,160,0.22)', sfx:'WOW!',    sfxC:'#33FFD4'},
+  {name:'MONA',  col:'#FF33CC',acc:'#BB0088',bg:'#180010',dot:'rgba(200,0,140,0.22)', sfx:'CRACK!',  sfxC:'#FF33CC'},
+  {name:'YARA',  col:'#BB33FF',acc:'#8800CC',bg:'#0e0018',dot:'rgba(150,0,255,0.22)', sfx:'WHOA!',   sfxC:'#BB33FF'},
+  {name:'ALEX',  col:'#FFFFFF', acc:'#C9A84C',bg:'#050505',dot:'rgba(201,168,76,0.2)', sfx:'LEGEND!', sfxC:'#C9A84C'},
+];
+const SFX_POS=[
+  {top:'10%',left:'7%',rot:-12},{bottom:'12%',right:'8%',rot:8},
+  {top:'8%',right:'6%',rot:10},{bottom:'10%',left:'6%',rot:-8},
+  {top:'13%',left:'10%',rot:-15},{bottom:'14%',right:'10%',rot:12},
+];
+
+// THREE.JS PARTICLES
+const threeCanvas=document.getElementById('three-canvas');
+const renderer=new THREE.WebGLRenderer({canvas:threeCanvas,alpha:true,antialias:false});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setSize(window.innerWidth,window.innerHeight);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,0.1,1000);
+camera.position.z=5;
+
+const PC=1800;
+const pos=new Float32Array(PC*3),cols=new Float32Array(PC*3),szs=new Float32Array(PC),vel=new Float32Array(PC*3);
+const pCols=PEOPLE.map(p=>new THREE.Color(p.col));
+for(let i=0;i<PC;i++){
+  const sp=14;
+  pos[i*3]=(Math.random()-.5)*sp;pos[i*3+1]=(Math.random()-.5)*sp;pos[i*3+2]=(Math.random()-.5)*sp;
+  const pc=pCols[Math.floor(Math.random()*pCols.length)];
+  cols[i*3]=pc.r;cols[i*3+1]=pc.g;cols[i*3+2]=pc.b;
+  szs[i]=Math.random()*3+0.5;
+  vel[i*3]=(Math.random()-.5)*0.002;vel[i*3+1]=(Math.random()-.5)*0.002;vel[i*3+2]=(Math.random()-.5)*0.001;
+}
+const geo=new THREE.BufferGeometry();
+geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+geo.setAttribute('aColor',new THREE.BufferAttribute(cols,3));
+geo.setAttribute('size',new THREE.BufferAttribute(szs,1));
+const partMat=new THREE.ShaderMaterial({
+  uniforms:{uSpeed:{value:0.0}},
+  vertexShader:`attribute float size;attribute vec3 aColor;varying vec3 vColor;varying float vA;uniform float uSpeed;void main(){vColor=aColor;vec4 mv=modelViewMatrix*vec4(position,1.0);gl_PointSize=size*(280.0/-mv.z)*(1.0+uSpeed*2.0);gl_Position=projectionMatrix*mv;vA=0.35+uSpeed*0.5;}`,
+  fragmentShader:`varying vec3 vColor;varying float vA;void main(){vec2 uv=gl_PointCoord-.5;float d=length(uv);if(d>0.5)discard;float a=pow(1.0-d*2.0,1.5)*vA;gl_FragColor=vec4(vColor,a);}`,
+  transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+});
+const particles=new THREE.Points(geo,partMat);
+scene.add(particles);
+let threeSpeed=0,threeActive=false;
+(function animateThree(){
+  requestAnimationFrame(animateThree);
+  if(!threeActive)return;
+  partMat.uniforms.uSpeed.value=threeSpeed;
+  for(let i=0;i<PC;i++){
+    pos[i*3]+=vel[i*3]*(1+threeSpeed*8);pos[i*3+1]+=vel[i*3+1]*(1+threeSpeed*8);pos[i*3+2]+=vel[i*3+2]*(1+threeSpeed*4);
+    const R=8;
+    if(Math.abs(pos[i*3])>R)vel[i*3]*=-1;
+    if(Math.abs(pos[i*3+1])>R)vel[i*3+1]*=-1;
+    if(Math.abs(pos[i*3+2])>R)vel[i*3+2]*=-1;
+  }
+  geo.attributes.position.needsUpdate=true;
+  particles.rotation.y+=0.0003+threeSpeed*0.003;
+  particles.rotation.x+=0.0001+threeSpeed*0.001;
+  renderer.render(scene,camera);
+})();
+window.addEventListener('resize',()=>{renderer.setSize(window.innerWidth,window.innerHeight);camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();});
+
+// LOGO RAYS CANVAS
+const lrc=document.getElementById('logo-rays-canvas');
+const lrCtx=lrc.getContext('2d');
+function resizeLRC(){lrc.width=window.innerWidth;lrc.height=window.innerHeight;}
+resizeLRC();
+window.addEventListener('resize',resizeLRC);
+function drawRays(alpha){
+  lrCtx.clearRect(0,0,lrc.width,lrc.height);
+  const cx=lrc.width/2,cy=lrc.height/2,maxR=Math.sqrt(cx*cx+cy*cy)*1.2,N=80;
+  for(let i=0;i<N;i++){
+    const a0=(i/N)*Math.PI*2,a1=((i+0.44)/N)*Math.PI*2;
+    lrCtx.beginPath();lrCtx.moveTo(cx,cy);lrCtx.arc(cx,cy,maxR,a0,a1);lrCtx.closePath();
+    lrCtx.fillStyle=i%3===0?`rgba(201,168,76,${alpha})`:i%5===0?`rgba(255,255,255,${alpha*0.5})`:`rgba(0,0,0,${alpha*0.2})`;
+    lrCtx.fill();
+  }
+}
+
+// FLASH
+const flashEl=document.getElementById('flash');
+function doFlash(i=0.9,ms=15,c='#fff'){
+  gsap.killTweensOf(flashEl);
+  gsap.set(flashEl,{background:c,opacity:i});
+  gsap.to(flashEl,{opacity:0,duration:ms/1000,ease:'power2.out'});
+}
+
+// BUILD PANELS
+const stage=document.getElementById('flip-stage');
+const panelEls=[];
+const sequence=[];
+PEOPLE.forEach(p=>sequence.push({...p,ms:210}));
+for(let r=0;r<3;r++){[...PEOPLE].sort(()=>Math.random()-.5).forEach(p=>sequence.push({...p,ms:Math.max(50,120-r*25)}));}
+for(let r=0;r<5;r++)PEOPLE.forEach(p=>sequence.push({...p,ms:26}));
+for(let r=0;r<2;r++){[...PEOPLE].sort(()=>Math.random()-.5).forEach(p=>sequence.push({...p,ms:Math.max(26,26+r*12)}));}
+PEOPLE.forEach((p,i)=>sequence.push({...p,ms:80+i*22}));
+
+sequence.forEach((p,i)=>{
+  const div=document.createElement('div');div.className='panel';
+  const dots=document.createElement('div');dots.className='p-dots';
+  dots.style.background=p.bg;
+  dots.style.backgroundImage=`radial-gradient(circle,${p.dot} 1.8px,transparent 1.8px)`;
+  dots.style.backgroundSize='22px 22px';div.appendChild(dots);
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 200 200');svg.classList.add('p-rays');svg.style.opacity='0.15';
+  for(let r=0;r<56;r++){
+    const a=(r/56)*Math.PI*2,line=document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1','100');line.setAttribute('y1','100');
+    line.setAttribute('x2',100+Math.cos(a)*200+'');line.setAttribute('y2',100+Math.sin(a)*200+'');
+    line.setAttribute('stroke',r%2===0?p.col:p.acc);line.setAttribute('stroke-width',r%4===0?'3':'0.8');
+    svg.appendChild(line);
+  }
+  div.appendChild(svg);
+  const border=document.createElement('div');border.className='p-border';
+  border.style.cssText=`border:7px solid ${p.col};box-shadow:inset 0 0 30px ${p.col}22,0 0 0 3px #000 inset`;
+  div.appendChild(border);
+  const inner=document.createElement('div');inner.className='p-inner';div.appendChild(inner);
+  const shadow=document.createElement('div');shadow.className='p-name-shadow';shadow.textContent=p.name;div.appendChild(shadow);
+  const name=document.createElement('div');name.className='p-name';name.textContent=p.name;
+  name.style.color=p.col;name.style.textShadow=`0 0 80px ${p.col},0 0 30px ${p.col}88`;div.appendChild(name);
+  if(i<12){
+    const spos=SFX_POS[i%SFX_POS.length];
+    const sfx=document.createElement('div');sfx.className='p-sfx';sfx.textContent=p.sfx;sfx.style.color=p.sfxC;
+    Object.entries(spos).forEach(([k,v])=>{if(k!=='rot')sfx.style[k]=v;});
+    sfx.style.transform=`rotate(${spos.rot}deg) scale(0)`;
+    sfx.style.textShadow='3px 3px 0 #000,-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000';
+    div.appendChild(sfx);
+  }
+  ['tl','tr','bl','br'].forEach(pos=>{
+    const rv=document.createElement('div');rv.className=`rivet ${pos}`;
+    rv.style.background=p.col;rv.style.boxShadow=`0 0 8px ${p.col}88`;div.appendChild(rv);
+  });
+  const num=document.createElement('div');num.className='p-num';
+  num.textContent=`${String(i+1).padStart(2,'0')} / ${String(sequence.length).padStart(2,'0')}`;div.appendChild(num);
+  stage.appendChild(div);panelEls.push(div);
+});
+
+// FLIP ANIMATION
+let seqIdx=0,curPanel=null,isRunning=true;
+function showNext(){
+  if(!isRunning)return;
+  if(seqIdx>=sequence.length){startLogo();return;}
+  if(curPanel)gsap.set(curPanel,{visibility:'hidden'});
+  const p=sequence[seqIdx],el=panelEls[seqIdx],ms=p.ms;
+  // 🔊 Sonido de panel
+  triggerPanelSound(ms, seqIdx);
+  gsap.set(el,{visibility:'visible'});
+  const sfx=el.querySelector('.p-sfx');
+  if(sfx){
+    const rot=parseFloat((sfx.style.transform.match(/-?\d+(\.\d+)?/)||['0'])[0]);
+    gsap.fromTo(sfx,{scale:0},{scale:1,duration:0.18,ease:'back.out(3)',rotation:rot});
+  }
+  if(ms<50){gsap.fromTo(el,{x:(Math.random()-.5)*14,y:(Math.random()-.5)*14},{x:0,y:0,duration:0.05,ease:'power3.out'});}
+  const isEpi=ms<=28,isSlow=seqIdx<6;
+  if(isSlow&&seqIdx%2===0)doFlash(0.5,50);
+  else if(isEpi)doFlash(0.75,12);
+  else if(seqIdx%5===0)doFlash(0.6,18);
+  if(!isSlow&&seqIdx%3===0)doFlash(0.12,10,p.col);
+  threeActive=true;threeSpeed=Math.max(0,1-ms/200);
+  curPanel=el;seqIdx++;
+  setTimeout(showNext,ms);
+}
+
+// LOGO SCENE
+function startLogo(){
+  isRunning=false;threeSpeed=0;
+  doFlash(1.0,500);
+  setTimeout(()=>{
+    stage.style.display='none';
+    const ls=document.getElementById('logo-screen');
+    gsap.set(ls,{visibility:'visible',opacity:1});
+    drawRays(0);
+    animateLogo();
+  },80);
+}
+
+function animateLogo(){
+  const tl=gsap.timeline();
+  const dots     = document.getElementById('logo-dots');
+  const corners  = document.querySelectorAll('.cdeco');
+  const box      = document.getElementById('logo-box');
+  const title    = document.getElementById('logo-title');
+  const tshadow  = document.getElementById('logo-title-shadow');
+  const divider  = document.getElementById('logo-divider');
+  const sub      = document.getElementById('logo-sub');
+  const scanlines= document.getElementById('scanlines');
+  const vignette = document.getElementById('vignette');
+  const ghost6   = document.getElementById('logo-ghost-6');
+  const circleL  = document.getElementById('logo-circle-l');
+  const circleR  = document.getElementById('logo-circle-r');
+  const dot      = document.getElementById('logo-dot');
+  const ls       = document.getElementById('logo-screen');
+
+  tl
+    // 0. Scanlines + viñeta
+    .to([scanlines,vignette],{opacity:1,duration:0.01},0)
+
+    // 1. Dot grid
+    .to(dots,{opacity:1,duration:0.4,ease:'power2.out'},0)
+
+    // 2. Círculos oscuros aparecen suave
+    .to(circleL,{opacity:1,duration:0.6,ease:'power2.out'},0.05)
+    .to(circleR,{opacity:1,duration:0.6,ease:'power2.out'},0.1)
+
+    // 3. "6" fantasma — fade in lento con ligero scale
+    .fromTo(ghost6,
+      {opacity:0,scale:0.92},
+      {opacity:1,scale:1,duration:0.8,ease:'power3.out'},
+    0.1)
+
+    // 4. Flash dorado de entrada
+    .add(()=>doFlash(0.75,60,'#c9a84c'),0.25)
+
+    // 5. Esquinas + punto blanco
+    .to(corners,{opacity:1,duration:0.25,stagger:0.05,ease:'power3.out'},0.3)
+    .to(dot,{opacity:1,duration:0.3,ease:'power2.out'},0.35)
+
+    // 6. Caja del título — reveal de izquierda a derecha
+    .to(box,{opacity:1,clipPath:'inset(0 0% 0 0)',duration:0.5,ease:'power4.inOut'},0.38)
+
+    // 7. Flash blanco al terminar el reveal
+    .add(()=>doFlash(0.5,45),0.78)
+
+    // 8. Línea dorada
+    .to(divider,{opacity:1,width:'min(80vw,500px)',duration:0.55,ease:'power3.out'},0.82)
+
+    // 9. Subtítulo
+    .to(sub,{opacity:1,duration:0.5,ease:'power2.out',y:0},0.98)
+
+    // 10. Rayos radiales
+    .add(()=>{let a=0;const id=setInterval(()=>{a=Math.min(0.05,a+0.003);drawRays(a);if(a>=0.05)clearInterval(id);},16);},0.4)
+
+    // 11. Partículas Three.js
+    .add(()=>{
+      threeActive=true;
+      gsap.to(threeCanvas,{opacity:0.18,duration:2});
+      gsap.to({v:0},{v:0.05,duration:3,onUpdate:function(){threeSpeed=this.targets()[0].v;}});
+    },1.0)
+
+    // 12. Glow pulsante
+    .add(()=>pulseGlow(),1.5);
+}
+
+function pulseGlow(){
+  const t = document.getElementById('logo-title');
+  const g = document.getElementById('logo-ghost-6');
+  const d = document.getElementById('logo-divider');
+  gsap.to({v:0},{v:1,duration:2.2,repeat:-1,yoyo:true,ease:'sine.inOut',
+    onUpdate:function(){
+      const v=this.targets()[0].v;
+      // Glow dorado en el título
+      t.style.textShadow=`0 0 ${20+v*40}px rgba(201,168,76,${0.3+v*0.5}), 0 2px 0 rgba(0,0,0,0.8)`;
+      // El "6" fantasma respira
+      g.style.webkitTextStroke=`clamp(2px,0.35vw,5px) rgba(201,168,76,${0.1+v*0.12})`;
+      // Línea dorada brilla
+      d.style.boxShadow=`0 0 ${15+v*25}px rgba(201,168,76,${0.5+v*0.5}),0 0 ${30+v*40}px rgba(201,168,76,${0.2+v*0.3})`;
+    }
+  });
+}
+
+// SKIP
+const skipBtn=document.getElementById('skip-btn');
+setTimeout(()=>gsap.to(skipBtn,{opacity:1,duration:0.5}),1200);
+skipBtn.onclick=()=>{isRunning=false;seqIdx=sequence.length;startLogo();};
+
+// ── Iniciar audio en el primer gesto (requisito de navegadores) ──
+document.addEventListener('click', () => { playRequested = true; startYTAudio(); }, { once: true });
+document.addEventListener('touchstart', () => { playRequested = true; startYTAudio(); }, { once: true });
+
+// START
+doFlash(1.0, 400);
+setTimeout(() => {
+  playRequested = true;
+  startYTAudio();
+  showNext();
+}, 500);
+</script>
+</body>
+</html>
