@@ -2296,15 +2296,23 @@ function initMarvelAudio() {
   function createMvPlayer() {
     mvYT = new YT.Player('yt-marvel-audio', {
       videoId: MARVEL_AUDIO_ID,
-      playerVars: { autoplay: 0, controls: 0, loop: 0, mute: 0, start: 0 },
+      playerVars: { autoplay: 0, controls: 0, loop: 0, mute: 0, start: 0, playsinline: 1 },
       events: {
         onReady: function(e) {
           mvYTReady = true;
           e.target.mute();
           e.target.playVideo();
-          setTimeout(function(){ e.target.unMute(); e.target.setVolume(100); }, 200);
+          setTimeout(function(){ e.target.unMute(); e.target.setVolume(100); }, 150);
         },
         onStateChange: function(e) {
+          // PLAYING: el audio arrancó — sincronizar animación ahora
+          if (e.data === YT.PlayerState.PLAYING && !mvStartTime) {
+            // Compensar el pequeño buffer de YouTube (~80ms)
+            mvStartTime = performance.now() - 80;
+            mvIsRunning = true;
+            mvDoFlash(1.0, 400);
+            mvRafId = requestAnimationFrame(mvSyncLoop);
+          }
           if (e.data === YT.PlayerState.ENDED) mvAudioDone = true;
         }
       }
@@ -2313,7 +2321,6 @@ function initMarvelAudio() {
   if (window.YT && window.YT.Player) {
     createMvPlayer();
   } else {
-    // YT API aún no cargó — registrar callback
     window._mvYTReadyCb = createMvPlayer;
   }
 }
@@ -2415,14 +2422,40 @@ function mvDoFlash(i=0.9,ms=15,c='#fff'){
 // ── Construir paneles ──
 const mvStage=document.getElementById('mv-flip-stage');
 const mvPanelEls=[];
-const mvSequence=[];
-MV_PEOPLE.forEach(p=>mvSequence.push({...p,ms:210}));
-for(let r=0;r<3;r++){[...MV_PEOPLE].sort(()=>Math.random()-.5).forEach(p=>mvSequence.push({...p,ms:Math.max(50,120-r*25)}));}
-for(let r=0;r<5;r++)MV_PEOPLE.forEach(p=>mvSequence.push({...p,ms:26}));
-for(let r=0;r<2;r++){[...MV_PEOPLE].sort(()=>Math.random()-.5).forEach(p=>mvSequence.push({...p,ms:Math.max(26,26+r*12)}));}
-MV_PEOPLE.forEach((p,i)=>mvSequence.push({...p,ms:80+i*22}));
 
-mvSequence.forEach((p,i)=>{
+// Timestamps exactos sincronizados al audio Marvel Comics Intro (Ok5PXdmQV-s)
+// Estructura real del audio: 8 golpes lentos → acelera progresivamente → blur épico → flash blanco → logo
+const MV_BEATS = [
+  // Fase 1: golpes lentos (un panel cada ~0.52s)
+  0.00, 0.52, 1.04, 1.56, 2.08, 2.60,
+  // Fase 2: se acelera (~0.28s)
+  3.00, 3.28, 3.56, 3.84,
+  // Fase 3: más rápido (~0.18s)
+  4.05, 4.23, 4.41, 4.59, 4.77, 4.95,
+  // Fase 4: muy rápido (~0.10s)
+  5.08, 5.18, 5.28, 5.38, 5.48, 5.58, 5.68, 5.78,
+  // Fase 5: frenético (~0.06s)
+  5.86, 5.92, 5.98, 6.04, 6.10, 6.16, 6.22, 6.28,
+  6.34, 6.40, 6.46, 6.52, 6.58, 6.64, 6.70, 6.76,
+  // Fase 6: blur máximo (~0.03s)
+  6.80, 6.83, 6.86, 6.89, 6.92, 6.95, 6.98, 7.01,
+  7.04, 7.07, 7.10, 7.13, 7.16, 7.19, 7.22, 7.25,
+  7.28, 7.31, 7.34, 7.37, 7.40, 7.43, 7.46, 7.49,
+];
+const MV_LOGO_T = 7.62; // flash blanco → logo
+
+// Pool de personas mapeado a cada beat
+const mvPeoplePool = [];
+let mvLastPi = -1;
+MV_BEATS.forEach((t, i) => {
+  let pi;
+  if(i < 6) { pi = i % MV_PEOPLE.length; } // fase lenta: uno por persona en orden
+  else { do { pi = Math.floor(Math.random()*MV_PEOPLE.length); } while(pi===mvLastPi); }
+  mvLastPi = pi;
+  mvPeoplePool.push({...MV_PEOPLE[pi], t, showSfx: i < 10});
+});
+
+mvPeoplePool.forEach((p,i)=>{
   const div=document.createElement('div');div.className='mv-panel';
   const dots=document.createElement('div');dots.className='mv-p-dots';
   dots.style.background=p.bg;
@@ -2445,7 +2478,7 @@ mvSequence.forEach((p,i)=>{
   const shadow=document.createElement('div');shadow.className='mv-p-name-shadow';shadow.textContent=p.name;div.appendChild(shadow);
   const name=document.createElement('div');name.className='mv-p-name';name.textContent=p.name;
   name.style.color=p.col;name.style.textShadow=`0 0 80px ${p.col},0 0 30px ${p.col}88`;div.appendChild(name);
-  if(i<12){
+  if(p.showSfx){
     const spos=MV_SFX_POS[i%MV_SFX_POS.length];
     const sfx=document.createElement('div');sfx.className='mv-p-sfx';sfx.textContent=p.sfx;sfx.style.color=p.sfxC;
     Object.entries(spos).forEach(([k,v])=>{if(k!=='rot')sfx.style[k]=v;});
@@ -2457,34 +2490,53 @@ mvSequence.forEach((p,i)=>{
     const rv=document.createElement('div');rv.className=`mv-rivet ${pos}`;
     rv.style.background=p.col;rv.style.boxShadow=`0 0 8px ${p.col}88`;div.appendChild(rv);
   });
-  const num=document.createElement('div');num.className='mv-p-num';
-  num.textContent=`${String(i+1).padStart(2,'0')} / ${String(mvSequence.length).padStart(2,'0')}`;div.appendChild(num);
   mvStage.appendChild(div);mvPanelEls.push(div);
 });
 
-// ── Flip animation ──
-let mvSeqIdx=0,mvCurPanel=null,mvIsRunning=true;
-function mvShowNext(){
-  if(!mvIsRunning)return;
-  if(mvSeqIdx>=mvSequence.length){mvStartLogo();return;}
-  if(mvCurPanel)gsap.set(mvCurPanel,{visibility:'hidden'});
-  const p=mvSequence[mvSeqIdx],el=mvPanelEls[mvSeqIdx],ms=p.ms;
+// ── Motor de sincronización: requestAnimationFrame como reloj maestro ──
+let mvStartTime=null, mvCurPanel=null, mvIsRunning=false, mvRafId=null, mvLogoDone=false;
+
+function mvShowPanel(idx){
+  if(mvCurPanel) gsap.set(mvCurPanel,{visibility:'hidden'});
+  const el=mvPanelEls[idx]; if(!el)return;
+  const p=mvPeoplePool[idx];
   gsap.set(el,{visibility:'visible'});
   const sfx=el.querySelector('.mv-p-sfx');
   if(sfx){
     const rot=parseFloat((sfx.style.transform.match(/-?\d+(\.\d+)?/)||['0'])[0]);
     gsap.fromTo(sfx,{scale:0},{scale:1,duration:0.18,ease:'back.out(3)',rotation:rot});
   }
-  if(ms<50){gsap.fromTo(el,{x:(Math.random()-.5)*14,y:(Math.random()-.5)*14},{x:0,y:0,duration:0.05,ease:'power3.out'});}
-  const isEpi=ms<=28,isSlow=mvSeqIdx<6;
-  if(isSlow&&mvSeqIdx%2===0)mvDoFlash(0.5,50);
-  else if(isEpi)mvDoFlash(0.75,12);
-  else if(mvSeqIdx%5===0)mvDoFlash(0.6,18);
-  if(!isSlow&&mvSeqIdx%3===0)mvDoFlash(0.12,10,p.col);
-  mvActive=true;mvSpeed=Math.max(0,1-ms/200);
-  mvCurPanel=el;mvSeqIdx++;
-  setTimeout(mvShowNext,ms);
+  // Calcular duración del panel actual
+  const msLeft = idx<mvPeoplePool.length-1 ? (mvPeoplePool[idx+1].t - p.t)*1000 : 300;
+  if(msLeft<50) gsap.fromTo(el,{x:(Math.random()-.5)*14,y:(Math.random()-.5)*14},{x:0,y:0,duration:0.05,ease:'power3.out'});
+  const isEpi=msLeft<=35, isSlow=idx<6;
+  if(isSlow&&idx%2===0) mvDoFlash(0.5,50);
+  else if(isEpi) mvDoFlash(0.75,12);
+  else if(idx%5===0) mvDoFlash(0.6,18);
+  if(!isSlow&&idx%3===0) mvDoFlash(0.12,10,p.col);
+  mvActive=true; mvSpeed=Math.max(0,1-(msLeft/200));
+  mvCurPanel=el;
 }
+
+function mvSyncLoop(){
+  if(!mvIsRunning) return;
+  const elapsed=(performance.now()-mvStartTime)/1000;
+  // Disparar cada panel en su timestamp exacto
+  for(let i=0;i<mvPeoplePool.length;i++){
+    if(!mvPeoplePool[i]._fired && elapsed>=mvPeoplePool[i].t){
+      mvPeoplePool[i]._fired=true;
+      mvShowPanel(i);
+    }
+  }
+  // Disparar logo en su timestamp
+  if(!mvLogoDone && elapsed>=MV_LOGO_T){
+    mvLogoDone=true; mvIsRunning=false;
+    cancelAnimationFrame(mvRafId);
+    mvStartLogo(); return;
+  }
+  mvRafId=requestAnimationFrame(mvSyncLoop);
+}
+
 
 // ── Logo screen ──
 function mvStartLogo(){
@@ -2546,7 +2598,8 @@ const mvSkip = document.getElementById('mv-skip-btn');
 setTimeout(()=>{ gsap.to(mvSkip,{opacity:1,duration:0.5}); },1200);
 mvSkip.onclick=()=>{
   mvIsRunning=false;
-  mvSeqIdx=mvSequence.length;
+  cancelAnimationFrame(mvRafId);
+  mvLogoDone=false;
   mvStartLogo();
 };
 
@@ -2559,12 +2612,9 @@ function launchIntro() {
   gateScreen.style.opacity = '0';
   setTimeout(() => { gateScreen.style.display = 'none'; }, 620);
 
-  // Inicializar audio con gesto del usuario (desbloqueado)
+  // Arrancar audio — cuando empiece a sonar, dispara la animación automáticamente
+  // via el evento onStateChange PLAYING (ver initMarvelAudio)
   initMarvelAudio();
-
-  // Arrancar animación
-  mvDoFlash(1.0, 400);
-  setTimeout(mvShowNext, 500);
 }
 
 gateBtn.addEventListener('click', launchIntro);
