@@ -49,6 +49,88 @@
     #mv-skip-btn:hover{color:rgba(255,255,255,0.7);border-color:rgba(255,255,255,0.3);}
     /* Audio oculto Marvel */
     #yt-marvel-audio{position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;}
+
+    /* ── Pantalla VIDEO entre intro y splash ── */
+    #video-screen {
+        position:fixed;inset:0;z-index:8500;
+        background:#000;
+        display:none;
+        align-items:center;justify-content:center;
+        opacity:0;
+        transition:opacity 0.8s ease;
+    }
+    #video-frame {
+        position:relative;
+        width: min(80vw, 142vh);
+        aspect-ratio: 16/9;
+    }
+    /* Borde exterior dorado con esquinas decorativas */
+    #video-frame::before {
+        content:'';
+        position:absolute;
+        inset:-14px;
+        border:1.5px solid rgba(201,168,76,0.5);
+        pointer-events:none;
+        z-index:2;
+    }
+    #video-frame::after {
+        content:'';
+        position:absolute;
+        inset:-26px;
+        border:1px solid rgba(201,168,76,0.18);
+        pointer-events:none;
+        z-index:2;
+    }
+    /* Esquinas doradas */
+    .vc-corner {
+        position:absolute;z-index:3;pointer-events:none;
+    }
+    .vc-corner::before,.vc-corner::after {
+        content:'';position:absolute;background:#c9a84c;
+        box-shadow:0 0 8px rgba(201,168,76,0.6);
+    }
+    .vc-corner::before{width:3px;height:36px;}
+    .vc-corner::after {width:36px;height:3px;}
+    .vc-corner.tl{top:-18px;left:-18px;}
+    .vc-corner.tr{top:-18px;right:-18px;transform:scaleX(-1);}
+    .vc-corner.bl{bottom:-18px;left:-18px;transform:scaleY(-1);}
+    .vc-corner.br{bottom:-18px;right:-18px;transform:scale(-1,-1);}
+    /* Puntos en las esquinas */
+    .vc-dot {
+        position:absolute;width:6px;height:6px;border-radius:50%;
+        background:#c9a84c;box-shadow:0 0 10px rgba(201,168,76,0.8);
+        z-index:4;pointer-events:none;
+    }
+    .vc-dot.tl{top:-3px;left:-3px;}
+    .vc-dot.tr{top:-3px;right:-3px;}
+    .vc-dot.bl{bottom:-3px;left:-3px;}
+    .vc-dot.br{bottom:-3px;right:-3px;}
+    /* Línea decorativa debajo */
+    #video-tagline {
+        position:absolute;bottom:-52px;left:50%;transform:translateX(-50%);
+        font-family:'Space Mono',monospace;font-size:0.5rem;letter-spacing:6px;
+        color:rgba(201,168,76,0.5);text-transform:uppercase;white-space:nowrap;
+    }
+    /* Botón continuar */
+    #video-continue {
+        position:absolute;bottom:-100px;left:50%;transform:translateX(-50%);
+        font-family:'Space Mono',monospace;font-size:0.52rem;letter-spacing:5px;
+        color:rgba(201,168,76,0.6);background:transparent;
+        border:1px solid rgba(201,168,76,0.3);padding:10px 28px;cursor:pointer;
+        text-transform:uppercase;opacity:0;transition:opacity 0.5s,color 0.3s,border-color 0.3s,box-shadow 0.3s;
+        white-space:nowrap;
+    }
+    #video-continue:hover {
+        color:#c9a84c;border-color:#c9a84c;
+        box-shadow:0 0 20px rgba(201,168,76,0.25);
+    }
+    #video-iframe-wrap {
+        position:relative;width:100%;height:100%;overflow:hidden;
+    }
+    #video-iframe-wrap iframe {
+        position:absolute;top:-60px;left:0;width:100%;height:calc(100% + 120px);
+        border:none;
+    }
     </style>
     <style>
         :root {
@@ -1103,6 +1185,30 @@
   </div>
 </div>
 <button id="mv-skip-btn">SKIP ›</button>
+
+<!-- ── PANTALLA DE VIDEO (entre intro y splash) ── -->
+<div id="video-screen">
+    <div id="video-frame">
+        <div class="vc-corner tl"></div>
+        <div class="vc-corner tr"></div>
+        <div class="vc-corner bl"></div>
+        <div class="vc-corner br"></div>
+        <div class="vc-dot tl"></div>
+        <div class="vc-dot tr"></div>
+        <div class="vc-dot bl"></div>
+        <div class="vc-dot br"></div>
+        <div id="video-iframe-wrap">
+            <iframe
+                id="yt-video-player"
+                src="https://www.youtube.com/embed/H2TchU_14fc?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&playsinline=1&mute=0&enablejsapi=1"
+                allow="autoplay; encrypted-media"
+                allowfullscreen>
+            </iframe>
+        </div>
+        <div id="video-tagline">S I E M P R E &nbsp; L O S &nbsp; 6</div>
+        <button id="video-continue">Continuar →</button>
+    </div>
+</div>
 
 <!-- Audio Marvel (oculto) -->
 <div id="yt-marvel-audio"></div>
@@ -2714,22 +2820,48 @@ function mvAnimateLogo(){
     .to({},{duration: Math.max(0.5, logoHoldDur - 1.5)}, 1.5);
 }
 
-// ── Transición: intro → splash ──
+// ── Transición: intro Marvel → video ──
 function mvDismiss(){
-  const mvEl = document.getElementById('marvel-intro');
+  const mvEl  = document.getElementById('marvel-intro');
   const skipEl = document.getElementById('mv-skip-btn');
-  // Parar audio Marvel
   try { if(mvYT) mvYT.stopVideo(); } catch(e){}
-  gsap.to([mvEl, skipEl],{opacity:0,duration:1,ease:'power2.inOut',onComplete:()=>{
-    mvEl.style.display='none';
-    skipEl.style.display='none';
-    // Mostrar splash con fade
+  gsap.to([mvEl, skipEl],{opacity:0, duration:0.8, ease:'power2.inOut', onComplete:()=>{
+    mvEl.style.display  = 'none';
+    skipEl.style.display = 'none';
+    showVideoScreen();
+  }});
+}
+
+// ── Pantalla de video ──
+function showVideoScreen(){
+  const vs = document.getElementById('video-screen');
+  vs.style.display = 'flex';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    vs.style.opacity = '1';
+    // Mostrar botón continuar después de 3s
+    setTimeout(()=>{
+      document.getElementById('video-continue').style.opacity = '1';
+    }, 3000);
+  }));
+}
+
+function showSplash(){
+  const vs = document.getElementById('video-screen');
+  // Parar el video
+  try {
+    const iframe = document.getElementById('yt-video-player');
+    iframe.src = '';
+  } catch(e){}
+  gsap.to(vs,{opacity:0, duration:0.8, ease:'power2.inOut', onComplete:()=>{
+    vs.style.display = 'none';
     const sp = document.getElementById('splash');
-    sp.style.display='flex';
-    sp.style.opacity='0';
+    sp.style.display = 'flex';
+    sp.style.opacity = '0';
     requestAnimationFrame(()=>requestAnimationFrame(()=>{ sp.style.opacity='1'; }));
   }});
 }
+
+document.getElementById('video-continue').addEventListener('click', showSplash);
 
 // ── Skip button ──
 const mvSkip = document.getElementById('mv-skip-btn');
