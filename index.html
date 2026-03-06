@@ -1247,7 +1247,6 @@
     <div id="mv-logo-sub">B O G O T&Aacute; &nbsp;·&nbsp; 2 0 2 6</div>
   </div>
 </div>
-<button id="mv-skip-btn">SKIP ›</button>
 
 <!-- ── PANTALLA DE VIDEO (entre intro y splash) ── -->
 <div id="video-screen">
@@ -1273,7 +1272,6 @@
     <div id="excepcion-bg"></div>
     <div id="excepcion-scanlines"></div>
     <div id="excepcion-content">
-        <div id="excepcion-pre">en medio de la mitad</div>
         <div id="excepcion-main">
             pero ustedes fueron<br><span class="gold">la excepción</span>
         </div>
@@ -2895,12 +2893,10 @@ function mvAnimateLogo(){
 
 // ── Transición: intro Marvel → video ──
 function mvDismiss(){
-  const mvEl  = document.getElementById('marvel-intro');
-  const skipEl = document.getElementById('mv-skip-btn');
+  const mvEl = document.getElementById('marvel-intro');
   try { if(mvYT) mvYT.stopVideo(); } catch(e){}
-  gsap.to([mvEl, skipEl],{opacity:0, duration:0.8, ease:'power2.inOut', onComplete:()=>{
-    mvEl.style.display  = 'none';
-    skipEl.style.display = 'none';
+  gsap.to(mvEl,{opacity:0, duration:0.8, ease:'power2.inOut', onComplete:()=>{
+    mvEl.style.display = 'none';
     showVideoScreen();
   }});
 }
@@ -2912,7 +2908,10 @@ var ytMainVideoTimer = null;
 function showVideoScreen(){
   const vs = document.getElementById('video-screen');
   vs.style.display = 'flex';
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{ vs.style.opacity = '1'; }));
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    vs.style.opacity = '1';
+    setTimeout(()=>{ document.getElementById('video-continue').style.opacity='1'; }, 800);
+  }));
 
   // Crear player con YT API
   ytMainVideo = new YT.Player('yt-main-video', {
@@ -2943,11 +2942,7 @@ function startVideoTimer(){
     try {
       var current   = ytMainVideo.getCurrentTime();
       var remaining = VIDEO_END_AT - current;
-      // Mostrar botón cuando falten 10s
-      if(remaining <= 10 && remaining > 0){
-        var btn = document.getElementById('video-continue');
-        if(btn.style.opacity !== '1') btn.style.opacity = '1';
-      }
+      // Botón siempre visible (se muestra al arrancar el video)
       // Cortar en 1:17
       if(current >= VIDEO_END_AT) showSplash();
     } catch(e){}
@@ -2972,7 +2967,6 @@ function showExcepcion(){
   const tl = gsap.timeline();
   tl
     // "en medio de la mitad" — aparece primero suave
-    .to('#excepcion-pre', {opacity:1, y:0, duration:1.2, ease:'power2.out'}, 0.4)
     // "pero ustedes fueron" — entra con punch
     .fromTo('#excepcion-main',
       {opacity:0, y:30, scale:0.92},
@@ -3000,15 +2994,7 @@ document.getElementById('excepcion-continue').addEventListener('click', function
 
 document.getElementById('video-continue').addEventListener('click', showSplash);
 
-// ── Skip button ──
-const mvSkip = document.getElementById('mv-skip-btn');
-setTimeout(()=>{ gsap.to(mvSkip,{opacity:1,duration:0.5}); },1200);
-mvSkip.onclick=()=>{
-  mvIsRunning=false;
-  cancelAnimationFrame(mvRafId);
-  mvLogoDone=false;
-  mvStartLogo();
-};
+// (skip button eliminado)
 
 // ── GATE → arranca todo con audio desbloqueado ──
 function mvStartAnimation() {
