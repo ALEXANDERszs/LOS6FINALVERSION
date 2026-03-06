@@ -4,7 +4,52 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Los 6 | Bogotá 2026</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Bebas+Neue&family=Space+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Bebas+Neue&family=Space+Mono&family=Bangers&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+    /* ══════════════════════════════════════
+       MARVEL INTRO — estilos embebidos
+    ══════════════════════════════════════ */
+    #marvel-intro{position:fixed;inset:0;z-index:9000;background:#000;transition:opacity 1s ease;}
+    #mv-three-canvas{position:fixed;inset:0;z-index:9001;opacity:0;pointer-events:none;}
+    #mv-flash{position:fixed;inset:0;z-index:9999;opacity:0;pointer-events:none;background:#fff;}
+    #mv-flip-stage{position:fixed;inset:0;z-index:9010;overflow:hidden;}
+    .mv-panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;visibility:hidden;overflow:hidden;will-change:transform,opacity;}
+    .mv-p-dots{position:absolute;inset:0;}
+    .mv-p-rays{position:absolute;width:240%;height:240%;left:-70%;top:-70%;pointer-events:none;}
+    .mv-p-border{position:absolute;inset:0;z-index:6;pointer-events:none;}
+    .mv-p-inner{position:absolute;inset:7px;border:2px solid rgba(255,255,255,0.08);z-index:6;pointer-events:none;}
+    .mv-p-name{position:relative;z-index:4;font-family:'Bebas Neue',sans-serif;font-size:clamp(18vw,25vw,320px);letter-spacing:-2px;line-height:0.82;text-align:center;-webkit-text-stroke:clamp(5px,1vw,13px) #000;paint-order:stroke fill;will-change:transform;}
+    .mv-p-name-shadow{position:absolute;z-index:3;font-family:'Bebas Neue',sans-serif;font-size:clamp(18vw,25vw,320px);letter-spacing:-2px;line-height:0.82;text-align:center;color:#000!important;-webkit-text-stroke:0!important;top:8px;left:8px;pointer-events:none;opacity:0.5;}
+    .mv-p-sfx{position:absolute;font-family:'Bangers',sans-serif;font-size:clamp(2.5rem,7vw,6rem);letter-spacing:3px;z-index:8;-webkit-text-stroke:3px #000;paint-order:stroke fill;text-shadow:4px 4px 0 #000;transform-origin:center;will-change:transform;}
+    .mv-rivet{position:absolute;width:22px;height:22px;border-radius:50%;border:3px solid rgba(0,0,0,0.6);z-index:8;}
+    .mv-rivet.tl{top:14px;left:14px;}.mv-rivet.tr{top:14px;right:14px;}.mv-rivet.bl{bottom:14px;left:14px;}.mv-rivet.br{bottom:14px;right:14px;}
+    .mv-p-num{position:absolute;bottom:18px;right:20px;font-family:'Space Mono',monospace;font-size:0.48rem;letter-spacing:5px;color:rgba(0,0,0,0.4);z-index:8;}
+    /* Logo screen */
+    #mv-logo-screen{position:fixed;inset:0;z-index:9020;display:flex;flex-direction:column;align-items:center;justify-content:center;visibility:hidden;overflow:hidden;background:#0d0d0d;}
+    #mv-logo-dots{position:absolute;inset:0;z-index:1;background-image:radial-gradient(circle,rgba(255,255,255,0.06) 1px,transparent 1px);background-size:18px 18px;opacity:0;}
+    #mv-logo-circle-l{position:absolute;width:min(70vw,600px);height:min(70vw,600px);border-radius:50%;background:radial-gradient(circle at 40% 40%,#1a1a1a,#080808);left:-15%;top:50%;transform:translateY(-50%);z-index:2;opacity:0;}
+    #mv-logo-circle-r{position:absolute;width:min(55vw,480px);height:min(55vw,480px);border-radius:50%;background:radial-gradient(circle at 60% 60%,#151515,#060606);right:-10%;top:50%;transform:translateY(-50%);z-index:2;opacity:0;}
+    #mv-logo-ghost-6{position:absolute;font-family:'Bebas Neue',sans-serif;font-size:clamp(55vw,75vw,900px);color:transparent;-webkit-text-stroke:clamp(2px,0.35vw,5px) rgba(201,168,76,0.18);line-height:1;bottom:-15%;right:-5%;z-index:3;pointer-events:none;opacity:0;letter-spacing:0;}
+    #mv-logo-rays-canvas{position:absolute;width:100%;height:100%;z-index:2;opacity:0;}
+    #mv-logo-box{position:relative;z-index:6;border:3px solid #c9a84c;padding:clamp(12px,2.5vw,28px) clamp(20px,4vw,50px);opacity:0;clip-path:inset(0 100% 0 0);background:rgba(5,5,5,0.5);}
+    #mv-logo-box::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 10px,rgba(255,255,255,0.025) 10px,rgba(255,255,255,0.025) 11px);pointer-events:none;z-index:0;}
+    #mv-logo-box::after{content:'';position:absolute;inset:5px;border:1px solid rgba(201,168,76,0.2);pointer-events:none;}
+    #mv-logo-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(18vw,23vw,300px);letter-spacing:clamp(4px,1.5vw,20px);color:#fff;line-height:0.88;text-align:center;position:relative;z-index:1;-webkit-text-stroke:clamp(1px,0.2vw,3px) rgba(201,168,76,0.5);paint-order:stroke fill;text-shadow:0 2px 0 rgba(0,0,0,0.8);}
+    #mv-logo-title-shadow{position:absolute;inset:0;font-family:'Bebas Neue',sans-serif;font-size:clamp(18vw,23vw,300px);letter-spacing:clamp(4px,1.5vw,20px);color:transparent;-webkit-text-stroke:clamp(1px,0.2vw,3px) rgba(201,168,76,0.4);line-height:0.88;text-align:center;top:5px;left:5px;z-index:0;pointer-events:none;}
+    #mv-logo-divider{width:0;height:2px;background:linear-gradient(90deg,transparent 0%,#c9a84c 20%,#e8d5a0 50%,#c9a84c 80%,transparent 100%);margin:clamp(10px,1.8vw,20px) 0 0;box-shadow:0 0 20px rgba(201,168,76,0.6),0 0 50px rgba(201,168,76,0.2);opacity:0;}
+    #mv-logo-sub{font-family:'Space Mono',monospace;font-size:clamp(0.4rem,1.2vw,0.8rem);letter-spacing:clamp(8px,1.5vw,18px);color:#c9a84c;text-transform:uppercase;margin-top:clamp(8px,1.2vw,14px);opacity:0;text-shadow:0 0 20px rgba(201,168,76,0.5);}
+    #mv-scanlines{position:absolute;inset:0;z-index:9;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.06) 3px,rgba(0,0,0,0.06) 4px);pointer-events:none;opacity:0;}
+    #mv-vignette{position:absolute;inset:0;z-index:8;background:radial-gradient(ellipse 80% 70% at 50% 50%,transparent 20%,rgba(0,0,0,0.8) 100%);pointer-events:none;opacity:0;}
+    .mv-cdeco{position:absolute;z-index:11;opacity:0;}.mv-cdeco::before,.mv-cdeco::after{content:'';position:absolute;background:#c9a84c;}.mv-cdeco::before{width:4px;height:50px;}.mv-cdeco::after{width:50px;height:4px;}
+    #mv-c-tl{top:20px;left:20px;}#mv-c-tr{top:20px;right:20px;transform:scaleX(-1);}#mv-c-bl{bottom:20px;left:20px;transform:scaleY(-1);}#mv-c-br{bottom:20px;right:20px;transform:scale(-1,-1);}
+    #mv-logo-dot{position:absolute;top:clamp(16px,3vw,30px);left:clamp(16px,3vw,30px);width:10px;height:10px;border-radius:50%;background:#fff;z-index:12;opacity:0;}
+    #mv-skip-btn{position:fixed;bottom:28px;right:28px;font-family:'Space Mono',monospace;font-size:0.5rem;letter-spacing:5px;color:rgba(255,255,255,0.25);z-index:9999;cursor:pointer;text-transform:uppercase;opacity:0;padding:8px 14px;border:1px solid rgba(255,255,255,0.1);background:transparent;transition:color 0.3s,border-color 0.3s;}
+    #mv-skip-btn:hover{color:rgba(255,255,255,0.7);border-color:rgba(255,255,255,0.3);}
+    /* Audio oculto Marvel */
+    #yt-marvel-audio{position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;}
+    </style>
     <style>
         :root {
             --gold: #c9a84c;
@@ -964,8 +1009,103 @@
             #comment-text { height: 70px; }
         }
     </style>
+    <style>
+    /* ── Pantalla de entrada (desbloquea audio) ── */
+    #gate-screen {
+        position:fixed;inset:0;z-index:99999;
+        background:#000;
+        display:flex;flex-direction:column;
+        align-items:center;justify-content:center;
+        cursor:pointer;
+        transition:opacity 0.6s ease;
+    }
+    #gate-logo {
+        font-family:'Bebas Neue',sans-serif;
+        font-size:clamp(5rem,18vw,14rem);
+        color:transparent;
+        -webkit-text-stroke:2px rgba(201,168,76,0.5);
+        letter-spacing:10px;
+        line-height:1;
+        animation:gate-pulse 2.5s ease-in-out infinite;
+    }
+    @keyframes gate-pulse {
+        0%,100%{-webkit-text-stroke-color:rgba(201,168,76,0.3);}
+        50%    {-webkit-text-stroke-color:rgba(201,168,76,0.9);}
+    }
+    #gate-btn {
+        margin-top:40px;
+        font-family:'Space Mono',monospace;
+        font-size:0.65rem;
+        letter-spacing:8px;
+        color:rgba(201,168,76,0.7);
+        border:1px solid rgba(201,168,76,0.35);
+        background:transparent;
+        padding:14px 40px;
+        cursor:pointer;
+        text-transform:uppercase;
+        animation:gate-blink 1.8s ease-in-out infinite;
+        transition:color 0.3s,border-color 0.3s,box-shadow 0.3s;
+    }
+    #gate-btn:hover {
+        color:#c9a84c;
+        border-color:#c9a84c;
+        box-shadow:0 0 30px rgba(201,168,76,0.3);
+    }
+    @keyframes gate-blink {
+        0%,100%{opacity:0.5;} 50%{opacity:1;}
+    }
+    #gate-note {
+        margin-top:18px;
+        font-family:'Cormorant Garamond',serif;
+        font-style:italic;
+        font-size:clamp(0.85rem,1.8vw,1.05rem);
+        color:rgba(245,237,224,0.3);
+        letter-spacing:2px;
+    }
+    </style>
 </head>
 <body>
+
+<!-- ── GATE: click para desbloquear audio ── -->
+<div id="gate-screen">
+    <div id="gate-logo">6</div>
+    <button id="gate-btn">▶ &nbsp; PRESIONA PARA ENTRAR</button>
+    <div id="gate-note">🎧 Sube el volumen antes de entrar</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MARVEL INTRO — embebido completo
+══════════════════════════════════════════ -->
+<div id="marvel-intro">
+  <canvas id="mv-three-canvas"></canvas>
+  <div id="mv-flash"></div>
+  <div id="mv-flip-stage"></div>
+
+  <div id="mv-logo-screen">
+    <div id="mv-logo-dots"></div>
+    <canvas id="mv-logo-rays-canvas"></canvas>
+    <div id="mv-logo-circle-l"></div>
+    <div id="mv-logo-circle-r"></div>
+    <div id="mv-logo-ghost-6">6</div>
+    <div id="mv-scanlines"></div>
+    <div id="mv-vignette"></div>
+    <div id="mv-c-tl" class="mv-cdeco"></div>
+    <div id="mv-c-tr" class="mv-cdeco"></div>
+    <div id="mv-c-bl" class="mv-cdeco"></div>
+    <div id="mv-c-br" class="mv-cdeco"></div>
+    <div id="mv-logo-dot"></div>
+    <div id="mv-logo-box">
+      <div id="mv-logo-title-shadow">LOS 6</div>
+      <div id="mv-logo-title">LOS 6</div>
+    </div>
+    <div id="mv-logo-divider"></div>
+    <div id="mv-logo-sub">B O G O T&Aacute; &nbsp;·&nbsp; 2 0 2 6</div>
+  </div>
+</div>
+<button id="mv-skip-btn">SKIP ›</button>
+
+<!-- Audio Marvel (oculto) -->
+<div id="yt-marvel-audio"></div>
 
 <div id="cursor"></div>
 <div id="cursor-trail"></div>
@@ -1744,6 +1884,7 @@ function startFrases() {
   var pendingVolume = 80;
 
   window.onYouTubeIframeAPIReady = function() {
+    // ── Player música de fondo ──
     ytPlayer = new YT.Player('yt-audio', {
       videoId: playlist[0].id,
       playerVars: { autoplay: 0, controls: 0, loop: 0, mute: 0, start: playlist[0].start },
@@ -1759,11 +1900,9 @@ function startFrases() {
           }
         },
         onStateChange: function(e) {
-          // Cuando termina la canción → siguiente automático
           if (e.data === YT.PlayerState.ENDED) {
             loadTrack((currentTrack + 1) % playlist.length);
           }
-          // Beat sync
           if (e.data === YT.PlayerState.PLAYING) {
             startBeat(playlist[currentTrack].bpm);
           } else {
@@ -1772,6 +1911,8 @@ function startFrases() {
         }
       }
     });
+    // ── Notificar al módulo Marvel que YT API está lista ──
+    if (window._mvYTReadyCb) window._mvYTReadyCb();
   };
 
   function loadTrack(idx) {
@@ -2136,6 +2277,492 @@ submitBtn.addEventListener('click', async () => {
 textInput.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') submitBtn.click();
 });
+</script>
+
+<!-- ══════════════════════════════════════════════════════
+     MARVEL INTRO — JS completo + audio YouTube
+══════════════════════════════════════════════════════ -->
+<script>
+(function(){
+
+// ── Ocultar splash hasta que termine la intro ──
+document.getElementById('splash').style.display = 'none';
+
+// ── Audio YouTube oculto (Marvel Comics Intro) ──
+var mvYT, mvYTReady = false, mvAudioDone = false;
+var MARVEL_AUDIO_ID = 'Ok5PXdmQV-s';
+
+function initMarvelAudio() {
+  function createMvPlayer() {
+    mvYT = new YT.Player('yt-marvel-audio', {
+      videoId: MARVEL_AUDIO_ID,
+      playerVars: { autoplay: 0, controls: 0, loop: 0, mute: 0, start: 1, end: 12, playsinline: 1 },
+      events: {
+        onReady: function(e) {
+          mvYTReady = true;
+          e.target.mute();
+          e.target.playVideo();
+          setTimeout(function(){ e.target.unMute(); e.target.setVolume(100); }, 150);
+        },
+        onStateChange: function(e) {
+          // PLAYING: el audio arrancó — sincronizar animación ahora
+          if (e.data === YT.PlayerState.PLAYING && !mvStartTime) {
+            mvStartTime = performance.now() - 80; // compensar buffer YouTube
+            mvStartAnimation();
+          }
+          if (e.data === YT.PlayerState.ENDED) mvAudioDone = true;
+        }
+      }
+    });
+  }
+  if (window.YT && window.YT.Player) {
+    createMvPlayer();
+  } else {
+    window._mvYTReadyCb = createMvPlayer;
+  }
+}
+
+// ── THREE.JS PARTICLES (namespaceado) ──
+const mvThreeCanvas = document.getElementById('mv-three-canvas');
+const mvRenderer = new THREE.WebGLRenderer({canvas: mvThreeCanvas, alpha: true, antialias: false});
+mvRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+mvRenderer.setSize(window.innerWidth, window.innerHeight);
+const mvScene = new THREE.Scene();
+const mvCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+mvCamera.position.z = 5;
+
+const MV_PEOPLE = [
+  {name:'ELI',  col:'#FFD700',acc:'#FF6B00',bg:'#180a00',dot:'rgba(255,140,0,0.3)',  sfx:'EPICA!', sfxC:'#FFD700'},
+  {name:'PAEZ', col:'#FF3333',acc:'#CC0000',bg:'#1e0000',dot:'rgba(255,30,30,0.25)', sfx:'BOOM!',  sfxC:'#FF3333'},
+  {name:'SANTI',col:'#33FFD4',acc:'#00AA88',bg:'#001812',dot:'rgba(0,220,160,0.22)', sfx:'WOW!',   sfxC:'#33FFD4'},
+  {name:'MONA', col:'#FF33CC',acc:'#BB0088',bg:'#180010',dot:'rgba(200,0,140,0.22)', sfx:'CRACK!', sfxC:'#FF33CC'},
+  {name:'YARA', col:'#BB33FF',acc:'#8800CC',bg:'#0e0018',dot:'rgba(150,0,255,0.22)', sfx:'WHOA!',  sfxC:'#BB33FF'},
+  {name:'ALEX', col:'#FFFFFF',acc:'#C9A84C',bg:'#050505',dot:'rgba(201,168,76,0.2)', sfx:'LEGEND!',sfxC:'#C9A84C'},
+];
+const MV_SFX_POS = [
+  {top:'10%',left:'7%',rot:-12},{bottom:'12%',right:'8%',rot:8},
+  {top:'8%',right:'6%',rot:10},{bottom:'10%',left:'6%',rot:-8},
+  {top:'13%',left:'10%',rot:-15},{bottom:'14%',right:'10%',rot:12},
+];
+
+const PC=1800;
+const mvPos=new Float32Array(PC*3),mvCols=new Float32Array(PC*3),mvSzs=new Float32Array(PC),mvVel=new Float32Array(PC*3);
+const mvPCols = MV_PEOPLE.map(p => new THREE.Color(p.col));
+for(let i=0;i<PC;i++){
+  const sp=14;
+  mvPos[i*3]=(Math.random()-.5)*sp;mvPos[i*3+1]=(Math.random()-.5)*sp;mvPos[i*3+2]=(Math.random()-.5)*sp;
+  const pc=mvPCols[Math.floor(Math.random()*mvPCols.length)];
+  mvCols[i*3]=pc.r;mvCols[i*3+1]=pc.g;mvCols[i*3+2]=pc.b;
+  mvSzs[i]=Math.random()*3+0.5;
+  mvVel[i*3]=(Math.random()-.5)*0.002;mvVel[i*3+1]=(Math.random()-.5)*0.002;mvVel[i*3+2]=(Math.random()-.5)*0.001;
+}
+const mvGeo=new THREE.BufferGeometry();
+mvGeo.setAttribute('position',new THREE.BufferAttribute(mvPos,3));
+mvGeo.setAttribute('aColor',new THREE.BufferAttribute(mvCols,3));
+mvGeo.setAttribute('size',new THREE.BufferAttribute(mvSzs,1));
+const mvPartMat=new THREE.ShaderMaterial({
+  uniforms:{uSpeed:{value:0.0}},
+  vertexShader:`attribute float size;attribute vec3 aColor;varying vec3 vColor;varying float vA;uniform float uSpeed;void main(){vColor=aColor;vec4 mv=modelViewMatrix*vec4(position,1.0);gl_PointSize=size*(280.0/-mv.z)*(1.0+uSpeed*2.0);gl_Position=projectionMatrix*mv;vA=0.35+uSpeed*0.5;}`,
+  fragmentShader:`varying vec3 vColor;varying float vA;void main(){vec2 uv=gl_PointCoord-.5;float d=length(uv);if(d>0.5)discard;float a=pow(1.0-d*2.0,1.5)*vA;gl_FragColor=vec4(vColor,a);}`,
+  transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+});
+const mvParticles=new THREE.Points(mvGeo,mvPartMat);
+mvScene.add(mvParticles);
+let mvSpeed=0,mvActive=false;
+(function mvAnimateThree(){
+  requestAnimationFrame(mvAnimateThree);
+  if(!mvActive)return;
+  mvPartMat.uniforms.uSpeed.value=mvSpeed;
+  for(let i=0;i<PC;i++){
+    mvPos[i*3]+=mvVel[i*3]*(1+mvSpeed*8);mvPos[i*3+1]+=mvVel[i*3+1]*(1+mvSpeed*8);mvPos[i*3+2]+=mvVel[i*3+2]*(1+mvSpeed*4);
+    const R=8;
+    if(Math.abs(mvPos[i*3])>R)mvVel[i*3]*=-1;
+    if(Math.abs(mvPos[i*3+1])>R)mvVel[i*3+1]*=-1;
+    if(Math.abs(mvPos[i*3+2])>R)mvVel[i*3+2]*=-1;
+  }
+  mvGeo.attributes.position.needsUpdate=true;
+  mvParticles.rotation.y+=0.0003+mvSpeed*0.003;
+  mvParticles.rotation.x+=0.0001+mvSpeed*0.001;
+  mvRenderer.render(mvScene,mvCamera);
+})();
+window.addEventListener('resize',()=>{
+  mvRenderer.setSize(window.innerWidth,window.innerHeight);
+  mvCamera.aspect=window.innerWidth/window.innerHeight;
+  mvCamera.updateProjectionMatrix();
+});
+
+// ── Rays canvas ──
+const mvLrc=document.getElementById('mv-logo-rays-canvas');
+const mvLrCtx=mvLrc.getContext('2d');
+function mvResizeLRC(){mvLrc.width=window.innerWidth;mvLrc.height=window.innerHeight;}
+mvResizeLRC();
+window.addEventListener('resize',mvResizeLRC);
+function mvDrawRays(alpha){
+  mvLrCtx.clearRect(0,0,mvLrc.width,mvLrc.height);
+  const cx=mvLrc.width/2,cy=mvLrc.height/2,maxR=Math.sqrt(cx*cx+cy*cy)*1.2,N=80;
+  for(let i=0;i<N;i++){
+    const a0=(i/N)*Math.PI*2,a1=((i+0.44)/N)*Math.PI*2;
+    mvLrCtx.beginPath();mvLrCtx.moveTo(cx,cy);mvLrCtx.arc(cx,cy,maxR,a0,a1);mvLrCtx.closePath();
+    mvLrCtx.fillStyle=i%3===0?`rgba(201,168,76,${alpha})`:i%5===0?`rgba(255,255,255,${alpha*0.5})`:`rgba(0,0,0,${alpha*0.2})`;
+    mvLrCtx.fill();
+  }
+}
+
+// ── Flash ──
+const mvFlashEl=document.getElementById('mv-flash');
+function mvDoFlash(i=0.9,ms=15,c='#fff'){
+  gsap.killTweensOf(mvFlashEl);
+  gsap.set(mvFlashEl,{background:c,opacity:i});
+  gsap.to(mvFlashEl,{opacity:0,duration:ms/1000,ease:'power2.out'});
+}
+
+// ── Construir paneles ──
+const mvStage=document.getElementById('mv-flip-stage');
+const mvPanelEls=[];
+
+// ════════════════════════════════════════════════════════════
+// TIMESTAMPS — audio va de 1s a 12s del video (11s totales)
+// Los tiempos aquí son RELATIVOS al inicio de reproducción (t=0 = segundo 1 del video)
+//
+// Estructura del Marvel Comics Intro en ese rango:
+//   0.0s–3.5s  → 7 golpes lentos y pesados  (~0.5s cada uno)
+//   3.5s–6.5s  → aceleración progresiva
+//   6.5s–9.0s  → blur frenético
+//   9.0s–9.8s  → flash blanco + logo
+//   9.8s–11s   → fade out de volumen (logo en pantalla)
+// ════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// BEATS del Marvel Comics Intro — segundos 1 a 12 del video
+// t=0 aquí = segundo 1 del video
+//
+// El audio real tiene esta estructura:
+//   0.0s–1.0s  → 2 golpes de entrada muy lentos (intro pesada)
+//   1.0s–3.5s  → 5 golpes lentos con eco (~0.5s cada uno)
+//   3.5s–5.5s  → aceleración: golpes cada ~0.25s
+//   5.5s–7.5s  → más rápido: cada ~0.12s
+//   7.5s–8.8s  → blur: cada ~0.05s
+//   8.8s–9.0s  → flash blanco
+//   9.0s–11s   → logo en pantalla + fade out volumen
+// ═══════════════════════════════════════════════════════════════
+const MV_BEATS = [
+  // ── FASE LENTA: 7 golpes pesados — cada ~0.65s ──
+  // El nombre aparece con animación lenta y épica, se queda visible
+  0.00, 0.65, 1.30, 1.95, 2.60, 3.25, 3.90,
+
+  // ── CORTE ABRUPTO → FASE RÁPIDA sin transición gradual ──
+  // De repente, sin aviso, todo explota en frenético
+  4.10, 4.20, 4.30, 4.40, 4.50, 4.60, 4.70, 4.80,
+  4.88, 4.96, 5.04, 5.12, 5.20, 5.28, 5.36, 5.44,
+  5.50, 5.56, 5.62, 5.68, 5.74, 5.80, 5.86, 5.92,
+  5.96, 6.00, 6.04, 6.08, 6.12, 6.16, 6.20, 6.24,
+  6.27, 6.30, 6.33, 6.36, 6.39, 6.42, 6.45, 6.48,
+  6.51, 6.54, 6.57, 6.60, 6.63, 6.66, 6.69, 6.72,
+  // ── BLUR MÁXIMO ~~0.025s ──
+  6.74, 6.77, 6.80, 6.83, 6.86, 6.89, 6.92, 6.95,
+  6.97, 6.99, 7.01, 7.03, 7.05, 7.07, 7.09, 7.11,
+  7.13, 7.15, 7.17, 7.19, 7.21, 7.23, 7.25, 7.27,
+  7.29, 7.31, 7.33, 7.35, 7.37, 7.39, 7.41, 7.43,
+];
+
+// El corte abrupto ocurre en el beat índice 7 (t=4.10s)
+const MV_SLOW_COUNT = 7;
+const MV_LOGO_T  = 7.50;  // flash blanco → logo "LOS 6"
+const MV_FADE_T  = 8.20;  // inicia fade out suave del volumen
+const MV_END_T   = 11.00; // fin total
+
+// Pool de personas
+const mvPeoplePool = [];
+let mvLastPi = -1;
+MV_BEATS.forEach((t, i) => {
+  let pi;
+  if(i < MV_SLOW_COUNT) {
+    // Fase lenta: cada persona en orden
+    pi = i % MV_PEOPLE.length;
+  } else {
+    // Fase rápida: aleatorio sin repetir el anterior
+    do { pi = Math.floor(Math.random()*MV_PEOPLE.length); } while(pi===mvLastPi);
+  }
+  mvLastPi = pi;
+  mvPeoplePool.push({...MV_PEOPLE[pi], t, slow: i < MV_SLOW_COUNT, showSfx: i < MV_SLOW_COUNT + 6});
+});
+
+// ── Construir un div por panel ──
+mvPeoplePool.forEach((p, i) => {
+  const div = document.createElement('div'); div.className = 'mv-panel';
+
+  // Fondo punteado
+  const dots = document.createElement('div'); dots.className = 'mv-p-dots';
+  dots.style.background = p.bg;
+  dots.style.backgroundImage = `radial-gradient(circle,${p.dot} 1.8px,transparent 1.8px)`;
+  dots.style.backgroundSize = '22px 22px'; div.appendChild(dots);
+
+  // Rayos SVG
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 200 200'); svg.classList.add('mv-p-rays'); svg.style.opacity='0.15';
+  for(let r=0;r<56;r++){
+    const a=(r/56)*Math.PI*2, line=document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1','100'); line.setAttribute('y1','100');
+    line.setAttribute('x2', 100+Math.cos(a)*200+''); line.setAttribute('y2', 100+Math.sin(a)*200+'');
+    line.setAttribute('stroke', r%2===0 ? p.col : p.acc);
+    line.setAttribute('stroke-width', r%4===0 ? '3' : '0.8');
+    svg.appendChild(line);
+  }
+  div.appendChild(svg);
+
+  // Borde de color
+  const border = document.createElement('div'); border.className = 'mv-p-border';
+  border.style.cssText = `border:7px solid ${p.col};box-shadow:inset 0 0 30px ${p.col}22,0 0 0 3px #000 inset`;
+  div.appendChild(border);
+  const inner = document.createElement('div'); inner.className = 'mv-p-inner'; div.appendChild(inner);
+
+  // Sombra del nombre
+  const shadow = document.createElement('div'); shadow.className = 'mv-p-name-shadow';
+  shadow.textContent = p.name; div.appendChild(shadow);
+
+  // Nombre principal — empieza invisible, gsap lo anima
+  const name = document.createElement('div'); name.className = 'mv-p-name';
+  name.textContent = p.name;
+  name.style.color = p.col;
+  name.style.textShadow = `0 0 80px ${p.col},0 0 30px ${p.col}88`;
+  name.style.opacity = '0'; // empieza oculto, gsap lo muestra
+  div.appendChild(name);
+
+  // SFX (solo primeros paneles)
+  if(p.showSfx){
+    const spos = MV_SFX_POS[i % MV_SFX_POS.length];
+    const sfx = document.createElement('div'); sfx.className = 'mv-p-sfx';
+    sfx.textContent = p.sfx; sfx.style.color = p.sfxC;
+    Object.entries(spos).forEach(([k,v]) => { if(k !== 'rot') sfx.style[k] = v; });
+    sfx.style.transform = `rotate(${spos.rot}deg) scale(0)`;
+    sfx.style.textShadow = '3px 3px 0 #000,-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000';
+    div.appendChild(sfx);
+  }
+
+  // Remaches en esquinas
+  ['tl','tr','bl','br'].forEach(pos => {
+    const rv = document.createElement('div'); rv.className = `mv-rivet ${pos}`;
+    rv.style.background = p.col; rv.style.boxShadow = `0 0 8px ${p.col}88`;
+    div.appendChild(rv);
+  });
+
+  mvStage.appendChild(div);
+  mvPanelEls.push(div);
+});
+
+// ── Motor de sincronización ──
+let mvStartTime=null, mvCurPanel=null, mvIsRunning=false, mvRafId=null;
+let mvLogoDone=false, mvFadeStarted=false;
+
+function mvShowPanel(idx){
+  if(mvCurPanel) gsap.set(mvCurPanel,{visibility:'hidden'});
+  const el=mvPanelEls[idx]; if(!el) return;
+  const p=mvPeoplePool[idx];
+  gsap.set(el,{visibility:'visible'});
+
+  const msLeft = idx < mvPeoplePool.length-1 ? (mvPeoplePool[idx+1].t - p.t)*1000 : 300;
+  const isBlur = msLeft <= 30;
+  const isFast = msLeft > 30 && msLeft <= 80;
+
+  // ── NOMBRE: lento con entrada épica, rápido snap instantáneo ──
+  const nameEl = el.querySelector('.mv-p-name');
+  if(nameEl){
+    if(p.slow){
+      // Entra desde abajo con escala grande y opacity — épico y pesado
+      gsap.killTweensOf(nameEl);
+      gsap.fromTo(nameEl,
+        {scale:1.6, opacity:0, y:50},
+        {scale:1, opacity:1, y:0, duration:0.38, ease:'power4.out'});
+    } else {
+      // Fase rápida: snap instantáneo, cero animación
+      gsap.killTweensOf(nameEl);
+      gsap.set(nameEl, {scale:1, opacity:1, y:0});
+    }
+  }
+
+  // ── SHADOW del nombre ──
+  const shadowEl = el.querySelector('.mv-p-name-shadow');
+  if(shadowEl){
+    if(p.slow) gsap.fromTo(shadowEl,{opacity:0},{opacity:0.5,duration:0.3,ease:'power2.out'});
+    else gsap.set(shadowEl,{opacity:0.5});
+  }
+
+  // ── SFX ──
+  const sfx = el.querySelector('.mv-p-sfx');
+  if(sfx){
+    const rot=parseFloat((sfx.style.transform.match(/-?\d+(\.\d+)?/)||['0'])[0]);
+    if(p.slow){
+      gsap.fromTo(sfx,{scale:0,rotation:rot},{scale:1,rotation:rot,duration:0.28,ease:'back.out(4)'});
+    } else {
+      gsap.set(sfx,{scale:1,rotation:rot});
+    }
+  }
+
+  // ── SHAKE (solo fases rápidas) ──
+  if(!p.slow){
+    const shk = isBlur ? 28 : isFast ? 14 : 7;
+    gsap.fromTo(el,
+      {x:(Math.random()-.5)*shk, y:(Math.random()-.5)*shk},
+      {x:0, y:0, duration:0.04, ease:'power3.out'});
+  }
+
+  // ── FLASHES ──
+  if(p.slow){
+    mvDoFlash(0.6, 120); // flash largo y suave en cada golpe lento
+  } else if(isBlur){
+    mvDoFlash(0.9, 8);
+  } else if(isFast){
+    mvDoFlash(0.75, 14);
+  } else {
+    if(idx%4===0) mvDoFlash(0.55, 20);
+  }
+  // Flash de color del personaje en fases rápidas
+  if(!p.slow && idx%5===0) mvDoFlash(0.2, 10, p.col);
+
+  // ── Partículas ──
+  mvActive = true;
+  mvSpeed = p.slow ? 0.01 : isBlur ? 1.0 : isFast ? 0.7 : 0.35;
+
+  mvCurPanel = el;
+}
+
+function mvFadeVolume(durationMs){
+  // Baja el volumen de 100 a 0 en durationMs con curva suave
+  const interval = 40;
+  const steps = Math.ceil(durationMs / interval);
+  let step = 0;
+  const t = setInterval(function(){
+    step++;
+    const ratio = step / steps;
+    // pow(1-ratio, 2) = curva que baja rápido al final
+    const vol = Math.max(0, Math.round(100 * Math.pow(1 - ratio, 2)));
+    try { if(mvYT) mvYT.setVolume(vol); } catch(e){}
+    if(step >= steps){ clearInterval(t); try{ if(mvYT) mvYT.setVolume(0); }catch(e){} }
+  }, interval);
+}
+
+function mvSyncLoop(){
+  if(!mvIsRunning) return;
+  const elapsed = (performance.now() - mvStartTime) / 1000;
+
+  // Disparar paneles en su timestamp exacto
+  for(let i=0; i<mvPeoplePool.length; i++){
+    if(!mvPeoplePool[i]._fired && elapsed >= mvPeoplePool[i].t){
+      mvPeoplePool[i]._fired = true;
+      mvShowPanel(i);
+    }
+  }
+
+  // Logo
+  if(!mvLogoDone && elapsed >= MV_LOGO_T){
+    mvLogoDone = true;
+    mvIsRunning = false;
+    cancelAnimationFrame(mvRafId);
+    mvStartLogo();
+    return;
+  }
+
+  mvRafId = requestAnimationFrame(mvSyncLoop);
+}
+
+
+// ── Logo screen ──
+function mvStartLogo(){
+  mvIsRunning=false; mvSpeed=0;
+  mvDoFlash(1.0, 500);
+  // Arrancar fade de volumen: dura hasta MV_END_T
+  const fadeMs = (MV_END_T - MV_LOGO_T) * 1000;
+  mvFadeVolume(fadeMs);
+  setTimeout(()=>{
+    mvStage.style.display='none';
+    const ls=document.getElementById('mv-logo-screen');
+    gsap.set(ls,{visibility:'visible',opacity:1});
+    mvDrawRays(0);
+    mvAnimateLogo();
+  },80);
+}
+
+function mvAnimateLogo(){
+  // El logo dura exactamente desde MV_LOGO_T hasta MV_END_T
+  const logoHoldDur = MV_END_T - MV_LOGO_T; // ~2s
+  const tl=gsap.timeline({onComplete: mvDismiss});
+  tl
+    .to([document.getElementById('mv-scanlines'),document.getElementById('mv-vignette')],{opacity:1,duration:0.01},0)
+    .to(document.getElementById('mv-logo-dots'),{opacity:1,duration:0.4,ease:'power2.out'},0)
+    .to(document.getElementById('mv-logo-circle-l'),{opacity:1,duration:0.6,ease:'power2.out'},0.05)
+    .to(document.getElementById('mv-logo-circle-r'),{opacity:1,duration:0.6,ease:'power2.out'},0.1)
+    .fromTo(document.getElementById('mv-logo-ghost-6'),{opacity:0,scale:0.92},{opacity:1,scale:1,duration:0.8,ease:'power3.out'},0.1)
+    .add(()=>mvDoFlash(0.75,60,'#c9a84c'),0.25)
+    .to(document.querySelectorAll('.mv-cdeco'),{opacity:1,duration:0.25,stagger:0.05,ease:'power3.out'},0.3)
+    .to(document.getElementById('mv-logo-dot'),{opacity:1,duration:0.3,ease:'power2.out'},0.35)
+    .to(document.getElementById('mv-logo-box'),{opacity:1,clipPath:'inset(0 0% 0 0)',duration:0.5,ease:'power4.inOut'},0.38)
+    .add(()=>mvDoFlash(0.5,45),0.78)
+    .to(document.getElementById('mv-logo-divider'),{opacity:1,width:'min(80vw,500px)',duration:0.55,ease:'power3.out'},0.82)
+    .to(document.getElementById('mv-logo-sub'),{opacity:1,duration:0.5,ease:'power2.out'},0.98)
+    .add(()=>{let a=0;const id=setInterval(()=>{a=Math.min(0.05,a+0.003);mvDrawRays(a);if(a>=0.05)clearInterval(id);},16);},0.4)
+    .add(()=>{
+      mvActive=true;
+      gsap.to(mvThreeCanvas,{opacity:0.18,duration:1.2});
+      gsap.to({v:0},{v:0.05,duration:2,onUpdate:function(){mvSpeed=this.targets()[0].v;}});
+    },1.0)
+    // El logo se queda en pantalla exactamente hasta MV_END_T
+    .to({},{duration: Math.max(0.5, logoHoldDur - 1.5)}, 1.5);
+}
+
+// ── Transición: intro → splash ──
+function mvDismiss(){
+  const mvEl = document.getElementById('marvel-intro');
+  const skipEl = document.getElementById('mv-skip-btn');
+  // Parar audio Marvel
+  try { if(mvYT) mvYT.stopVideo(); } catch(e){}
+  gsap.to([mvEl, skipEl],{opacity:0,duration:1,ease:'power2.inOut',onComplete:()=>{
+    mvEl.style.display='none';
+    skipEl.style.display='none';
+    // Mostrar splash con fade
+    const sp = document.getElementById('splash');
+    sp.style.display='flex';
+    sp.style.opacity='0';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{ sp.style.opacity='1'; }));
+  }});
+}
+
+// ── Skip button ──
+const mvSkip = document.getElementById('mv-skip-btn');
+setTimeout(()=>{ gsap.to(mvSkip,{opacity:1,duration:0.5}); },1200);
+mvSkip.onclick=()=>{
+  mvIsRunning=false;
+  cancelAnimationFrame(mvRafId);
+  mvLogoDone=false;
+  mvStartLogo();
+};
+
+// ── GATE → arranca todo con audio desbloqueado ──
+function mvStartAnimation() {
+  if(mvStartTime) return; // ya arrancó
+  mvStartTime = performance.now();
+  mvIsRunning = true;
+  mvDoFlash(1.0, 400);
+  mvRafId = requestAnimationFrame(mvSyncLoop);
+}
+
+const gateScreen = document.getElementById('gate-screen');
+const gateBtn    = document.getElementById('gate-btn');
+
+function launchIntro() {
+  // Ocultar gate
+  gateScreen.style.opacity = '0';
+  setTimeout(() => { gateScreen.style.display = 'none'; }, 620);
+
+  // Arrancar audio
+  initMarvelAudio();
+
+  // Fallback: si el audio no dispara PLAYING en 1.5s, arrancar animación de todas formas
+  setTimeout(mvStartAnimation, 1500);
+}
+
+gateBtn.addEventListener('click', launchIntro);
+gateScreen.addEventListener('click', launchIntro);
+
+})();
 </script>
 </body>
 </html>
