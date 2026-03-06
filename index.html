@@ -2306,9 +2306,12 @@ function initMarvelAudio() {
           setTimeout(function(){ e.target.unMute(); e.target.setVolume(100); }, 150);
         },
         onStateChange: function(e) {
-          if (e.data === YT.PlayerState.PLAYING && !mvStartTime) {
-            mvStartTime = performance.now() - 80;
-            mvStartAnimation();
+          if (e.data === YT.PlayerState.PLAYING) {
+            // Resincronizar: ajustar mvStartTime según cuánto lleva el audio
+            try {
+              var audioElapsed = mvYT.getCurrentTime() - 1; // -1 porque start=1
+              mvStartTime = performance.now() - (audioElapsed * 1000);
+            } catch(err) {}
           }
           if (e.data === YT.PlayerState.ENDED) mvAudioDone = true;
         }
@@ -2751,15 +2754,15 @@ const gateScreen = document.getElementById('gate-screen');
 const gateBtn    = document.getElementById('gate-btn');
 
 function launchIntro() {
-  // Ocultar gate
-  gateScreen.style.opacity = '0';
-  setTimeout(() => { gateScreen.style.display = 'none'; }, 620);
+  // Ocultar gate INMEDIATAMENTE — sin delay, sin opacity transition
+  gateScreen.style.display = 'none';
 
   // Arrancar audio
   initMarvelAudio();
 
-  // Fallback: si el audio no dispara PLAYING en 1.5s, arrancar animación de todas formas
-  setTimeout(mvStartAnimation, 1500);
+  // Arrancar animación inmediatamente — no esperar al audio
+  // Si el audio llega después, mvStartTime ya estará seteado y se ignora
+  mvStartAnimation();
 }
 
 gateBtn.addEventListener('click', launchIntro);
