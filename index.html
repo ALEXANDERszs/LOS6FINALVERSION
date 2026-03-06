@@ -1200,12 +1200,7 @@
         <div class="vc-dot bl"></div>
         <div class="vc-dot br"></div>
         <div id="video-iframe-wrap">
-            <iframe
-                id="yt-video-player"
-                src="https://www.youtube.com/embed/H2TchU_14fc?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&playsinline=1&mute=0&enablejsapi=1"
-                allow="autoplay; encrypted-media"
-                allowfullscreen>
-            </iframe>
+            <div id="yt-main-video"></div>
         </div>
     </div>
     <div id="video-tagline">S I E M P R E &nbsp; L O S &nbsp; 6</div>
@@ -2835,25 +2830,58 @@ function mvDismiss(){
 }
 
 // ── Pantalla de video ──
+var ytMainVideo = null;
+var ytMainVideoTimer = null;
+
 function showVideoScreen(){
   const vs = document.getElementById('video-screen');
   vs.style.display = 'flex';
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    vs.style.opacity = '1';
-    // Mostrar botón continuar después de 3s
-    setTimeout(()=>{
-      document.getElementById('video-continue').style.opacity = '1';
-    }, 3000);
-  }));
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ vs.style.opacity = '1'; }));
+
+  // Crear player con YT API
+  ytMainVideo = new YT.Player('yt-main-video', {
+    videoId: 'H2TchU_14fc',
+    width: '100%',
+    height: '100%',
+    playerVars: {
+      autoplay: 1, controls: 0, modestbranding: 1,
+      rel: 0, showinfo: 0, iv_load_policy: 3,
+      disablekb: 1, playsinline: 1, fs: 0
+    },
+    events: {
+      onReady: function(e){ e.target.playVideo(); },
+      onStateChange: function(e){
+        if(e.data === YT.PlayerState.PLAYING) startVideoTimer();
+        if(e.data === YT.PlayerState.ENDED) showSplash();
+      }
+    }
+  });
+}
+
+var VIDEO_END_AT = 77; // 1:17
+
+function startVideoTimer(){
+  if(ytMainVideoTimer) return;
+  ytMainVideoTimer = setInterval(function(){
+    if(!ytMainVideo) return;
+    try {
+      var current   = ytMainVideo.getCurrentTime();
+      var remaining = VIDEO_END_AT - current;
+      // Mostrar botón cuando falten 10s
+      if(remaining <= 10 && remaining > 0){
+        var btn = document.getElementById('video-continue');
+        if(btn.style.opacity !== '1') btn.style.opacity = '1';
+      }
+      // Cortar en 1:17
+      if(current >= VIDEO_END_AT) showSplash();
+    } catch(e){}
+  }, 500);
 }
 
 function showSplash(){
+  if(ytMainVideoTimer){ clearInterval(ytMainVideoTimer); ytMainVideoTimer=null; }
+  try { if(ytMainVideo) ytMainVideo.stopVideo(); } catch(e){}
   const vs = document.getElementById('video-screen');
-  // Parar el video
-  try {
-    const iframe = document.getElementById('yt-video-player');
-    iframe.src = '';
-  } catch(e){}
   gsap.to(vs,{opacity:0, duration:0.8, ease:'power2.inOut', onComplete:()=>{
     vs.style.display = 'none';
     const sp = document.getElementById('splash');
