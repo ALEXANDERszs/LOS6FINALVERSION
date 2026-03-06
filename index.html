@@ -2307,11 +2307,8 @@ function initMarvelAudio() {
         onStateChange: function(e) {
           // PLAYING: el audio arrancó — sincronizar animación ahora
           if (e.data === YT.PlayerState.PLAYING && !mvStartTime) {
-            // Compensar el pequeño buffer de YouTube (~80ms)
-            mvStartTime = performance.now() - 80;
-            mvIsRunning = true;
-            mvDoFlash(1.0, 400);
-            mvRafId = requestAnimationFrame(mvSyncLoop);
+            mvStartTime = performance.now() - 80; // compensar buffer YouTube
+            mvStartAnimation();
           }
           if (e.data === YT.PlayerState.ENDED) mvAudioDone = true;
         }
@@ -2676,6 +2673,14 @@ mvSkip.onclick=()=>{
 };
 
 // ── GATE → arranca todo con audio desbloqueado ──
+function mvStartAnimation() {
+  if(mvStartTime) return; // ya arrancó
+  mvStartTime = performance.now();
+  mvIsRunning = true;
+  mvDoFlash(1.0, 400);
+  mvRafId = requestAnimationFrame(mvSyncLoop);
+}
+
 const gateScreen = document.getElementById('gate-screen');
 const gateBtn    = document.getElementById('gate-btn');
 
@@ -2684,9 +2689,11 @@ function launchIntro() {
   gateScreen.style.opacity = '0';
   setTimeout(() => { gateScreen.style.display = 'none'; }, 620);
 
-  // Arrancar audio — cuando empiece a sonar, dispara la animación automáticamente
-  // via el evento onStateChange PLAYING (ver initMarvelAudio)
+  // Arrancar audio
   initMarvelAudio();
+
+  // Fallback: si el audio no dispara PLAYING en 1.5s, arrancar animación de todas formas
+  setTimeout(mvStartAnimation, 1500);
 }
 
 gateBtn.addEventListener('click', launchIntro);
