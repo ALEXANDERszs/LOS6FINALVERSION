@@ -2448,189 +2448,170 @@ const mvPanelEls=[];
 //   9.0s–11s   → logo en pantalla + fade out volumen
 // ═══════════════════════════════════════════════════════════════
 const MV_BEATS = [
-  // Fase 0: 2 golpes de entrada muy lentos y pesados
-  0.00, 0.80,
-  // Fase 1: 5 golpes lentos (~0.50s)
-  1.30, 1.80, 2.30, 2.80, 3.30,
-  // Fase 2: aceleración (~0.25s)
-  3.55, 3.80, 4.05, 4.30, 4.55, 4.80, 5.05, 5.30,
-  // Fase 3: rápido (~0.12s)
-  5.42, 5.54, 5.66, 5.78, 5.90, 6.02, 6.14, 6.26,
-  6.38, 6.50, 6.62, 6.74, 6.86, 6.98, 7.10, 7.22,
-  // Fase 4: frenético (~0.06s)
-  7.28, 7.34, 7.40, 7.46, 7.52, 7.58, 7.64, 7.70,
-  7.76, 7.82, 7.88, 7.94, 8.00, 8.06, 8.12, 8.18,
-  // Fase 5: blur máximo (~0.03s)
-  8.21, 8.24, 8.27, 8.30, 8.33, 8.36, 8.39, 8.42,
-  8.45, 8.48, 8.51, 8.54, 8.57, 8.60, 8.63, 8.66,
-  8.69, 8.72, 8.75, 8.78,
-];
-const MV_LOGO_T  = 8.85;  // flash blanco → logo "LOS 6"
-const MV_FADE_T  = 9.50;  // empieza fade out de volumen
-const MV_END_T   = 11.00; // fin → transición al splash
+  // ── FASE LENTA: 7 golpes pesados — cada ~0.65s ──
+  // El nombre aparece con animación lenta y épica, se queda visible
+  0.00, 0.65, 1.30, 1.95, 2.60, 3.25, 3.90,
 
-// Pool de personas mapeado a cada beat
+  // ── CORTE ABRUPTO → FASE RÁPIDA sin transición gradual ──
+  // De repente, sin aviso, todo explota en frenético
+  4.10, 4.20, 4.30, 4.40, 4.50, 4.60, 4.70, 4.80,
+  4.88, 4.96, 5.04, 5.12, 5.20, 5.28, 5.36, 5.44,
+  5.50, 5.56, 5.62, 5.68, 5.74, 5.80, 5.86, 5.92,
+  5.96, 6.00, 6.04, 6.08, 6.12, 6.16, 6.20, 6.24,
+  6.27, 6.30, 6.33, 6.36, 6.39, 6.42, 6.45, 6.48,
+  6.51, 6.54, 6.57, 6.60, 6.63, 6.66, 6.69, 6.72,
+  // ── BLUR MÁXIMO ~~0.025s ──
+  6.74, 6.77, 6.80, 6.83, 6.86, 6.89, 6.92, 6.95,
+  6.97, 6.99, 7.01, 7.03, 7.05, 7.07, 7.09, 7.11,
+  7.13, 7.15, 7.17, 7.19, 7.21, 7.23, 7.25, 7.27,
+  7.29, 7.31, 7.33, 7.35, 7.37, 7.39, 7.41, 7.43,
+];
+
+// El corte abrupto ocurre en el beat índice 7 (t=4.10s)
+const MV_SLOW_COUNT = 7;
+const MV_LOGO_T  = 7.50;  // flash blanco → logo "LOS 6"
+const MV_FADE_T  = 8.20;  // inicia fade out suave del volumen
+const MV_END_T   = 11.00; // fin total
+
+// Pool de personas
 const mvPeoplePool = [];
 let mvLastPi = -1;
 MV_BEATS.forEach((t, i) => {
   let pi;
-  // Primeros 7 beats (fases 0 y 1): cada persona en orden, pausado y épico
-  if(i < 7) {
+  if(i < MV_SLOW_COUNT) {
+    // Fase lenta: cada persona en orden
     pi = i % MV_PEOPLE.length;
   } else {
-    // Resto: aleatorio sin repetir el anterior
+    // Fase rápida: aleatorio sin repetir el anterior
     do { pi = Math.floor(Math.random()*MV_PEOPLE.length); } while(pi===mvLastPi);
   }
   mvLastPi = pi;
-  mvPeoplePool.push({...MV_PEOPLE[pi], t, showSfx: i < 12});
+  mvPeoplePool.push({...MV_PEOPLE[pi], t, slow: i < MV_SLOW_COUNT, showSfx: i < MV_SLOW_COUNT + 6});
 });
 
-mvPeoplePool.forEach((p,i)=>{
-  const div=document.createElement('div');div.className='mv-panel';
-  const dots=document.createElement('div');dots.className='mv-p-dots';
-  dots.style.background=p.bg;
-  dots.style.backgroundImage=`radial-gradient(circle,${p.dot} 1.8px,transparent 1.8px)`;
-  dots.style.backgroundSize='22px 22px';div.appendChild(dots);
-  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
-  svg.setAttribute('viewBox','0 0 200 200');svg.classList.add('mv-p-rays');svg.style.opacity='0.15';
-  for(let r=0;r<56;r++){
-    const a=(r/56)*Math.PI*2,line=document.createElementNS('http://www.w3.org/2000/svg','line');
-    line.setAttribute('x1','100');line.setAttribute('y1','100');
-    line.setAttribute('x2',100+Math.cos(a)*200+'');line.setAttribute('y2',100+Math.sin(a)*200+'');
-    line.setAttribute('stroke',r%2===0?p.col:p.acc);line.setAttribute('stroke-width',r%4===0?'3':'0.8');
-    svg.appendChild(line);
-  }
-  div.appendChild(svg);
-  const border=document.createElement('div');border.className='mv-p-border';
-  border.style.cssText=`border:7px solid ${p.col};box-shadow:inset 0 0 30px ${p.col}22,0 0 0 3px #000 inset`;
-  div.appendChild(border);
-  const inner=document.createElement('div');inner.className='mv-p-inner';div.appendChild(inner);
-  const shadow=document.createElement('div');shadow.className='mv-p-name-shadow';shadow.textContent=p.name;div.appendChild(shadow);
-  const name=document.createElement('div');name.className='mv-p-name';name.textContent=p.name;
-  name.style.color=p.col;name.style.textShadow=`0 0 80px ${p.col},0 0 30px ${p.col}88`;div.appendChild(name);
-  if(p.showSfx){
-    const spos=MV_SFX_POS[i%MV_SFX_POS.length];
-    const sfx=document.createElement('div');sfx.className='mv-p-sfx';sfx.textContent=p.sfx;sfx.style.color=p.sfxC;
-    Object.entries(spos).forEach(([k,v])=>{if(k!=='rot')sfx.style[k]=v;});
-    sfx.style.transform=`rotate(${spos.rot}deg) scale(0)`;
-    sfx.style.textShadow='3px 3px 0 #000,-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000';
-    div.appendChild(sfx);
-  }
-  ['tl','tr','bl','br'].forEach(pos=>{
-    const rv=document.createElement('div');rv.className=`mv-rivet ${pos}`;
-    rv.style.background=p.col;rv.style.boxShadow=`0 0 8px ${p.col}88`;div.appendChild(rv);
-  });
-  mvStage.appendChild(div);mvPanelEls.push(div);
-});
-
-// ── Motor de sincronización: requestAnimationFrame como reloj maestro ──
-let mvStartTime=null, mvCurPanel=null, mvIsRunning=false, mvRafId=null, mvLogoDone=false, mvFadeStarted=false, mvEndDone=false;
+// ── Motor de sincronización ──
+let mvStartTime=null, mvCurPanel=null, mvIsRunning=false, mvRafId=null;
+let mvLogoDone=false, mvFadeStarted=false;
 
 function mvShowPanel(idx){
   if(mvCurPanel) gsap.set(mvCurPanel,{visibility:'hidden'});
-  const el=mvPanelEls[idx]; if(!el)return;
+  const el=mvPanelEls[idx]; if(!el) return;
   const p=mvPeoplePool[idx];
   gsap.set(el,{visibility:'visible'});
 
-  // Calcular duración del panel
   const msLeft = idx < mvPeoplePool.length-1 ? (mvPeoplePool[idx+1].t - p.t)*1000 : 300;
-  const isSlow  = msLeft > 400;   // fases 0 y 1
-  const isMid   = msLeft > 100 && msLeft <= 400;
-  const isFast  = msLeft <= 100 && msLeft > 40;
-  const isBlur  = msLeft <= 40;
+  const isBlur = msLeft <= 30;
+  const isFast = msLeft > 30 && msLeft <= 80;
 
-  // ── Animación del nombre según fase ──
+  // ── NOMBRE: lento con entrada épica, rápido snap instantáneo ──
   const nameEl = el.querySelector('.mv-p-name');
   if(nameEl){
-    if(isSlow){
-      // Entrada épica: el nombre entra con scale grande y se asienta
+    if(p.slow){
+      // Entra desde abajo con escala grande y opacity — épico y pesado
+      gsap.killTweensOf(nameEl);
       gsap.fromTo(nameEl,
-        {scale:1.35, opacity:0, y: -30},
-        {scale:1, opacity:1, y:0, duration:0.22, ease:'power3.out'});
-    } else if(isMid){
-      gsap.fromTo(nameEl,
-        {scale:1.15, opacity:0},
-        {scale:1, opacity:1, duration:0.1, ease:'power2.out'});
+        {scale:1.6, opacity:0, y:50},
+        {scale:1, opacity:1, y:0, duration:0.38, ease:'power4.out'});
     } else {
-      // Rápido/blur: aparece instantáneo
-      gsap.set(nameEl, {scale:1, opacity:1});
+      // Fase rápida: snap instantáneo, cero animación
+      gsap.killTweensOf(nameEl);
+      gsap.set(nameEl, {scale:1, opacity:1, y:0});
     }
+  }
+
+  // ── SHADOW del nombre ──
+  const shadowEl = el.querySelector('.mv-p-name-shadow');
+  if(shadowEl){
+    if(p.slow) gsap.fromTo(shadowEl,{opacity:0},{opacity:0.5,duration:0.3,ease:'power2.out'});
+    else gsap.set(shadowEl,{opacity:0.5});
   }
 
   // ── SFX ──
   const sfx = el.querySelector('.mv-p-sfx');
   if(sfx){
     const rot=parseFloat((sfx.style.transform.match(/-?\d+(\.\d+)?/)||['0'])[0]);
-    gsap.fromTo(sfx,{scale:0},{scale:1, duration:isSlow?0.22:0.12, ease:'back.out(3)', rotation:rot});
+    if(p.slow){
+      gsap.fromTo(sfx,{scale:0,rotation:rot},{scale:1,rotation:rot,duration:0.28,ease:'back.out(4)'});
+    } else {
+      gsap.set(sfx,{scale:1,rotation:rot});
+    }
   }
 
-  // ── Shake en fases rápidas ──
-  if(isFast || isBlur){
-    const shk = isBlur ? 22 : 12;
+  // ── SHAKE (solo fases rápidas) ──
+  if(!p.slow){
+    const shk = isBlur ? 28 : isFast ? 14 : 7;
     gsap.fromTo(el,
       {x:(Math.random()-.5)*shk, y:(Math.random()-.5)*shk},
       {x:0, y:0, duration:0.04, ease:'power3.out'});
   }
 
-  // ── Flashes ──
-  if(isSlow && idx%2===0)      mvDoFlash(0.55, 80);
-  else if(isSlow)               mvDoFlash(0.30, 60);
-  else if(isMid && idx%3===0)   mvDoFlash(0.50, 30);
-  else if(isFast)               mvDoFlash(0.70, 14);
-  else if(isBlur)               mvDoFlash(0.85, 8);
+  // ── FLASHES ──
+  if(p.slow){
+    mvDoFlash(0.6, 120); // flash largo y suave en cada golpe lento
+  } else if(isBlur){
+    mvDoFlash(0.9, 8);
+  } else if(isFast){
+    mvDoFlash(0.75, 14);
+  } else {
+    if(idx%4===0) mvDoFlash(0.55, 20);
+  }
+  // Flash de color del personaje en fases rápidas
+  if(!p.slow && idx%5===0) mvDoFlash(0.2, 10, p.col);
 
-  // Flash de color del personaje cada pocos paneles
-  if(!isSlow && idx%4===0) mvDoFlash(0.18, 12, p.col);
-
-  // ── Speed de partículas Three.js ──
+  // ── Partículas ──
   mvActive = true;
-  mvSpeed = isSlow ? 0.02 : isMid ? 0.2 : isFast ? 0.6 : 1.0;
+  mvSpeed = p.slow ? 0.01 : isBlur ? 1.0 : isFast ? 0.7 : 0.35;
 
   mvCurPanel = el;
 }
 
+function mvFadeVolume(durationMs){
+  // Baja el volumen de 100 a 0 en durationMs con curva suave
+  const interval = 40;
+  const steps = Math.ceil(durationMs / interval);
+  let step = 0;
+  const t = setInterval(function(){
+    step++;
+    const ratio = step / steps;
+    // pow(1-ratio, 2) = curva que baja rápido al final
+    const vol = Math.max(0, Math.round(100 * Math.pow(1 - ratio, 2)));
+    try { if(mvYT) mvYT.setVolume(vol); } catch(e){}
+    if(step >= steps){ clearInterval(t); try{ if(mvYT) mvYT.setVolume(0); }catch(e){} }
+  }, interval);
+}
+
 function mvSyncLoop(){
   if(!mvIsRunning) return;
-  const elapsed=(performance.now()-mvStartTime)/1000;
+  const elapsed = (performance.now() - mvStartTime) / 1000;
 
-  // Disparar cada panel en su timestamp exacto
-  for(let i=0;i<mvPeoplePool.length;i++){
-    if(!mvPeoplePool[i]._fired && elapsed>=mvPeoplePool[i].t){
-      mvPeoplePool[i]._fired=true;
+  // Disparar paneles en su timestamp exacto
+  for(let i=0; i<mvPeoplePool.length; i++){
+    if(!mvPeoplePool[i]._fired && elapsed >= mvPeoplePool[i].t){
+      mvPeoplePool[i]._fired = true;
       mvShowPanel(i);
     }
   }
 
-  // Fade out de volumen suave en los últimos ~1.2s
-  if(!mvFadeStarted && elapsed>=MV_FADE_T){
-    mvFadeStarted=true;
-    const fadeDur = (MV_END_T - MV_FADE_T) * 1000; // ms
-    const fadeStep = 50; // cada 50ms
-    const steps = fadeDur / fadeStep;
-    let step = 0;
-    const fadeInt = setInterval(function(){
-      step++;
-      const vol = Math.max(0, Math.round(100 * (1 - step/steps)));
-      try { if(mvYT) mvYT.setVolume(vol); } catch(e){}
-      if(step >= steps) clearInterval(fadeInt);
-    }, fadeStep);
-  }
-
-  // Disparar logo
-  if(!mvLogoDone && elapsed>=MV_LOGO_T){
-    mvLogoDone=true; mvIsRunning=false;
+  // Logo
+  if(!mvLogoDone && elapsed >= MV_LOGO_T){
+    mvLogoDone = true;
+    mvIsRunning = false;
     cancelAnimationFrame(mvRafId);
-    mvStartLogo(); return;
+    mvStartLogo();
+    return;
   }
 
-  mvRafId=requestAnimationFrame(mvSyncLoop);
+  mvRafId = requestAnimationFrame(mvSyncLoop);
 }
 
 
 // ── Logo screen ──
 function mvStartLogo(){
-  mvIsRunning=false;mvSpeed=0;
-  mvDoFlash(1.0,500);
+  mvIsRunning=false; mvSpeed=0;
+  mvDoFlash(1.0, 500);
+  // Arrancar fade de volumen: dura hasta MV_END_T
+  const fadeMs = (MV_END_T - MV_LOGO_T) * 1000;
+  mvFadeVolume(fadeMs);
   setTimeout(()=>{
     mvStage.style.display='none';
     const ls=document.getElementById('mv-logo-screen');
