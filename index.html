@@ -194,6 +194,86 @@
         transition:opacity 0.6s,color 0.3s,border-color 0.3s,box-shadow 0.3s;
     }
     #excepcion-continue:hover{color:#c9a84c;border-color:#c9a84c;box-shadow:0 0 20px rgba(201,168,76,0.25);}
+
+    /* ── Pantalla FOTO ── */
+    #foto-screen {
+        position:fixed;inset:0;z-index:8700;
+        background:#050505;
+        display:none;opacity:0;
+        align-items:center;justify-content:center;
+        flex-direction:column;
+        transition:opacity 0.8s ease;
+    }
+    #foto-frame {
+        position:relative;
+        width:min(72vw,520px);
+        aspect-ratio:1/1;
+    }
+    /* Borde dorado doble */
+    #foto-frame::before {
+        content:'';position:absolute;inset:-12px;
+        border:1.5px solid rgba(201,168,76,0.55);
+        pointer-events:none;z-index:2;
+    }
+    #foto-frame::after {
+        content:'';position:absolute;inset:-22px;
+        border:1px solid rgba(201,168,76,0.18);
+        pointer-events:none;z-index:2;
+    }
+    /* Esquinas */
+    .fc-corner { position:absolute;z-index:3;pointer-events:none; }
+    .fc-corner::before,.fc-corner::after {
+        content:'';position:absolute;background:#c9a84c;
+        box-shadow:0 0 8px rgba(201,168,76,0.5);
+    }
+    .fc-corner::before{width:3px;height:28px;}
+    .fc-corner::after{width:28px;height:3px;}
+    .fc-corner.tl{top:-14px;left:-14px;}
+    .fc-corner.tr{top:-14px;right:-14px;transform:scaleX(-1);}
+    .fc-corner.bl{bottom:-14px;left:-14px;transform:scaleY(-1);}
+    .fc-corner.br{bottom:-14px;right:-14px;transform:scale(-1,-1);}
+    #foto-img {
+        width:100%;height:100%;
+        object-fit:cover;
+        display:block;
+        filter:sepia(0.12) contrast(1.05);
+    }
+    /* Placeholder cuando no hay foto */
+    #foto-placeholder {
+        width:100%;height:100%;
+        background:linear-gradient(135deg,#0d0d0d 0%,#1a1506 50%,#0d0d0d 100%);
+        display:flex;align-items:center;justify-content:center;
+        flex-direction:column;gap:16px;
+    }
+    #foto-placeholder .ph-icon {
+        font-size:3rem;opacity:0.25;
+    }
+    #foto-placeholder .ph-text {
+        font-family:'Space Mono',monospace;font-size:0.45rem;
+        letter-spacing:5px;color:rgba(201,168,76,0.3);text-transform:uppercase;
+    }
+    /* Overlay sutil */
+    #foto-overlay {
+        position:absolute;inset:0;z-index:1;
+        background:linear-gradient(180deg,rgba(0,0,0,0.08) 0%,transparent 30%,transparent 70%,rgba(0,0,0,0.25) 100%);
+        pointer-events:none;
+    }
+    #foto-caption {
+        margin-top:clamp(20px,3vw,32px);
+        font-family:'Cormorant Garamond',serif;
+        font-style:italic;font-size:clamp(0.85rem,1.8vw,1.1rem);
+        color:rgba(201,168,76,0.55);letter-spacing:3px;
+        opacity:0;text-align:center;
+    }
+    #foto-continue {
+        position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
+        font-family:'Space Mono',monospace;font-size:0.52rem;letter-spacing:5px;
+        color:rgba(201,168,76,0.6);background:transparent;
+        border:1px solid rgba(201,168,76,0.3);padding:10px 28px;cursor:pointer;
+        text-transform:uppercase;opacity:0;z-index:8702;white-space:nowrap;
+        transition:opacity 0.6s,color 0.3s,border-color 0.3s,box-shadow 0.3s;
+    }
+    #foto-continue:hover{color:#c9a84c;border-color:#c9a84c;box-shadow:0 0 20px rgba(201,168,76,0.25);}
     </style>
     <style>
         :root {
@@ -1280,6 +1360,23 @@
     </div>
 </div>
 <button id="excepcion-continue">Continuar →</button>
+
+<!-- ── PANTALLA FOTO ── -->
+<div id="foto-screen">
+    <div id="foto-frame">
+        <div class="fc-corner tl"></div>
+        <div class="fc-corner tr"></div>
+        <div class="fc-corner bl"></div>
+        <div class="fc-corner br"></div>
+        <div id="foto-placeholder">
+            <div class="ph-icon">📷</div>
+            <div class="ph-text">tu foto aquí</div>
+        </div>
+        <div id="foto-overlay"></div>
+    </div>
+    <div id="foto-caption">16 · 07 · 2024 &nbsp;·&nbsp; Bogotá</div>
+</div>
+<button id="foto-continue">Continuar →</button>
 
 <!-- Audio Marvel (oculto) -->
 <div id="yt-marvel-audio"></div>
@@ -2959,35 +3056,68 @@ function showSplash(){
   }});
 }
 
-function showExcepcion(){
-  const es = document.getElementById('excepcion-screen');
-  es.style.display = 'flex';
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{ es.style.opacity='1'; }));
+// ══════════════════════════════════════════════
+// FLUJO: video → excepción → foto → splash
+// Cada pantalla tiene su propia función, sin solapamientos
+// ══════════════════════════════════════════════
 
-  const tl = gsap.timeline();
-  tl
-    // "en medio de la mitad" — aparece primero suave
-    // "pero ustedes fueron" — entra con punch
-    .fromTo('#excepcion-main',
-      {opacity:0, y:30, scale:0.92},
-      {opacity:1, y:0, scale:1, duration:0.9, ease:'power4.out'}, 1.4)
-    // Línea dorada
-    .to('#excepcion-line', {opacity:1, width:'min(60vw,340px)', duration:0.7, ease:'power3.out'}, 2.1)
-    // Fecha
-    .to('#excepcion-date', {opacity:1, duration:0.8, ease:'power2.out'}, 2.5)
-    // Botón continuar
-    .to('#excepcion-continue', {opacity:1, duration:0.6, ease:'power2.out'}, 3.4);
+var _showSplashCalled = false;
+function showSplash() {
+  if(_showSplashCalled) return;
+  _showSplashCalled = true;
+  if(ytMainVideoTimer){ clearInterval(ytMainVideoTimer); ytMainVideoTimer=null; }
+  try { if(ytMainVideo) ytMainVideo.stopVideo(); } catch(e){}
+  const vs = document.getElementById('video-screen');
+  const vb = document.getElementById('video-continue');
+  vb.style.pointerEvents = 'none';
+  gsap.to([vs, vb], {opacity:0, duration:0.8, ease:'power2.inOut', onComplete:()=>{
+    vs.style.display = 'none';
+    showExcepcion();
+  }});
 }
 
-document.getElementById('excepcion-continue').addEventListener('click', function(){
-  const es = document.getElementById('excepcion-screen');
+function showExcepcion() {
+  const es  = document.getElementById('excepcion-screen');
   const btn = document.getElementById('excepcion-continue');
-  gsap.to([es, btn],{opacity:0, duration:0.8, ease:'power2.inOut', onComplete:()=>{
-    es.style.display='none';
-    btn.style.display='none';
+  es.style.display = 'flex';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ es.style.opacity='1'; }));
+  gsap.timeline()
+    .fromTo('#excepcion-main',
+      {opacity:0, y:30, scale:0.92},
+      {opacity:1, y:0, scale:1, duration:0.9, ease:'power4.out'}, 1.2)
+    .to('#excepcion-line',  {opacity:1, width:'min(60vw,340px)', duration:0.7, ease:'power3.out'}, 2.0)
+    .to('#excepcion-date',  {opacity:1, duration:0.8, ease:'power2.out'}, 2.4)
+    .to(btn,                {opacity:1, duration:0.6, ease:'power2.out'}, 3.2);
+}
+
+document.getElementById('excepcion-continue').addEventListener('click', function() {
+  this.style.pointerEvents = 'none';
+  const es = document.getElementById('excepcion-screen');
+  gsap.to([es, this], {opacity:0, duration:0.8, ease:'power2.inOut', onComplete:()=>{
+    es.style.display = 'none';
+    showFoto();
+  }});
+});
+
+function showFoto() {
+  const fs  = document.getElementById('foto-screen');
+  const btn = document.getElementById('foto-continue');
+  const cap = document.getElementById('foto-caption');
+  fs.style.display = 'flex';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ fs.style.opacity='1'; }));
+  gsap.timeline()
+    .to(cap, {opacity:1, duration:1.0, ease:'power2.out'}, 0.8)
+    .to(btn, {opacity:1, duration:0.6, ease:'power2.out'}, 1.6);
+}
+
+document.getElementById('foto-continue').addEventListener('click', function() {
+  this.style.pointerEvents = 'none';
+  const fs = document.getElementById('foto-screen');
+  gsap.to([fs, this], {opacity:0, duration:0.8, ease:'power2.inOut', onComplete:()=>{
+    fs.style.display = 'none';
     const sp = document.getElementById('splash');
-    sp.style.display='flex';
-    sp.style.opacity='0';
+    sp.style.display = 'flex';
+    sp.style.opacity = '0';
     requestAnimationFrame(()=>requestAnimationFrame(()=>{ sp.style.opacity='1'; }));
   }});
 });
