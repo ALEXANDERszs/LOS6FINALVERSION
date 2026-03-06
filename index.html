@@ -2486,6 +2486,69 @@ MV_BEATS.forEach((t, i) => {
   mvPeoplePool.push({...MV_PEOPLE[pi], t, slow: i < MV_SLOW_COUNT, showSfx: i < MV_SLOW_COUNT + 6});
 });
 
+// ── Construir un div por panel ──
+mvPeoplePool.forEach((p, i) => {
+  const div = document.createElement('div'); div.className = 'mv-panel';
+
+  // Fondo punteado
+  const dots = document.createElement('div'); dots.className = 'mv-p-dots';
+  dots.style.background = p.bg;
+  dots.style.backgroundImage = `radial-gradient(circle,${p.dot} 1.8px,transparent 1.8px)`;
+  dots.style.backgroundSize = '22px 22px'; div.appendChild(dots);
+
+  // Rayos SVG
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 200 200'); svg.classList.add('mv-p-rays'); svg.style.opacity='0.15';
+  for(let r=0;r<56;r++){
+    const a=(r/56)*Math.PI*2, line=document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1','100'); line.setAttribute('y1','100');
+    line.setAttribute('x2', 100+Math.cos(a)*200+''); line.setAttribute('y2', 100+Math.sin(a)*200+'');
+    line.setAttribute('stroke', r%2===0 ? p.col : p.acc);
+    line.setAttribute('stroke-width', r%4===0 ? '3' : '0.8');
+    svg.appendChild(line);
+  }
+  div.appendChild(svg);
+
+  // Borde de color
+  const border = document.createElement('div'); border.className = 'mv-p-border';
+  border.style.cssText = `border:7px solid ${p.col};box-shadow:inset 0 0 30px ${p.col}22,0 0 0 3px #000 inset`;
+  div.appendChild(border);
+  const inner = document.createElement('div'); inner.className = 'mv-p-inner'; div.appendChild(inner);
+
+  // Sombra del nombre
+  const shadow = document.createElement('div'); shadow.className = 'mv-p-name-shadow';
+  shadow.textContent = p.name; div.appendChild(shadow);
+
+  // Nombre principal — empieza invisible, gsap lo anima
+  const name = document.createElement('div'); name.className = 'mv-p-name';
+  name.textContent = p.name;
+  name.style.color = p.col;
+  name.style.textShadow = `0 0 80px ${p.col},0 0 30px ${p.col}88`;
+  name.style.opacity = '0'; // empieza oculto, gsap lo muestra
+  div.appendChild(name);
+
+  // SFX (solo primeros paneles)
+  if(p.showSfx){
+    const spos = MV_SFX_POS[i % MV_SFX_POS.length];
+    const sfx = document.createElement('div'); sfx.className = 'mv-p-sfx';
+    sfx.textContent = p.sfx; sfx.style.color = p.sfxC;
+    Object.entries(spos).forEach(([k,v]) => { if(k !== 'rot') sfx.style[k] = v; });
+    sfx.style.transform = `rotate(${spos.rot}deg) scale(0)`;
+    sfx.style.textShadow = '3px 3px 0 #000,-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000';
+    div.appendChild(sfx);
+  }
+
+  // Remaches en esquinas
+  ['tl','tr','bl','br'].forEach(pos => {
+    const rv = document.createElement('div'); rv.className = `mv-rivet ${pos}`;
+    rv.style.background = p.col; rv.style.boxShadow = `0 0 8px ${p.col}88`;
+    div.appendChild(rv);
+  });
+
+  mvStage.appendChild(div);
+  mvPanelEls.push(div);
+});
+
 // ── Motor de sincronización ──
 let mvStartTime=null, mvCurPanel=null, mvIsRunning=false, mvRafId=null;
 let mvLogoDone=false, mvFadeStarted=false;
