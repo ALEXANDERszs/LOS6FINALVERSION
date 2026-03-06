@@ -2434,37 +2434,55 @@ const mvPanelEls=[];
 //   9.0s–9.8s  → flash blanco + logo
 //   9.8s–11s   → fade out de volumen (logo en pantalla)
 // ════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// BEATS del Marvel Comics Intro — segundos 1 a 12 del video
+// t=0 aquí = segundo 1 del video
+//
+// El audio real tiene esta estructura:
+//   0.0s–1.0s  → 2 golpes de entrada muy lentos (intro pesada)
+//   1.0s–3.5s  → 5 golpes lentos con eco (~0.5s cada uno)
+//   3.5s–5.5s  → aceleración: golpes cada ~0.25s
+//   5.5s–7.5s  → más rápido: cada ~0.12s
+//   7.5s–8.8s  → blur: cada ~0.05s
+//   8.8s–9.0s  → flash blanco
+//   9.0s–11s   → logo en pantalla + fade out volumen
+// ═══════════════════════════════════════════════════════════════
 const MV_BEATS = [
-  // Fase 1: golpes lentos (~0.52s cada uno) — 7 golpes
-  0.00, 0.52, 1.04, 1.56, 2.08, 2.60, 3.12,
-  // Fase 2: aceleración moderada (~0.30s)
-  3.42, 3.72, 4.02, 4.32,
-  // Fase 3: más rápido (~0.20s)
-  4.52, 4.72, 4.92, 5.12, 5.32, 5.52,
-  // Fase 4: rápido (~0.12s)
-  5.64, 5.76, 5.88, 6.00, 6.12, 6.24, 6.36, 6.48,
-  // Fase 5: frenético (~0.07s)
-  6.55, 6.62, 6.69, 6.76, 6.83, 6.90, 6.97, 7.04,
-  7.11, 7.18, 7.25, 7.32, 7.39, 7.46, 7.53, 7.60,
-  // Fase 6: blur máximo (~0.04s)
-  7.64, 7.68, 7.72, 7.76, 7.80, 7.84, 7.88, 7.92,
-  7.96, 8.00, 8.04, 8.08, 8.12, 8.16, 8.20, 8.24,
-  8.28, 8.32, 8.36, 8.40, 8.44, 8.48, 8.52, 8.56,
-  8.60, 8.64, 8.68, 8.72, 8.76, 8.80, 8.84, 8.88,
+  // Fase 0: 2 golpes de entrada muy lentos y pesados
+  0.00, 0.80,
+  // Fase 1: 5 golpes lentos (~0.50s)
+  1.30, 1.80, 2.30, 2.80, 3.30,
+  // Fase 2: aceleración (~0.25s)
+  3.55, 3.80, 4.05, 4.30, 4.55, 4.80, 5.05, 5.30,
+  // Fase 3: rápido (~0.12s)
+  5.42, 5.54, 5.66, 5.78, 5.90, 6.02, 6.14, 6.26,
+  6.38, 6.50, 6.62, 6.74, 6.86, 6.98, 7.10, 7.22,
+  // Fase 4: frenético (~0.06s)
+  7.28, 7.34, 7.40, 7.46, 7.52, 7.58, 7.64, 7.70,
+  7.76, 7.82, 7.88, 7.94, 8.00, 8.06, 8.12, 8.18,
+  // Fase 5: blur máximo (~0.03s)
+  8.21, 8.24, 8.27, 8.30, 8.33, 8.36, 8.39, 8.42,
+  8.45, 8.48, 8.51, 8.54, 8.57, 8.60, 8.63, 8.66,
+  8.69, 8.72, 8.75, 8.78,
 ];
-const MV_LOGO_T  = 9.00;  // flash blanco → logo "LOS 6"
-const MV_FADE_T  = 9.80;  // empieza fade out de volumen
-const MV_END_T   = 11.00; // fin total → transición al splash
+const MV_LOGO_T  = 8.85;  // flash blanco → logo "LOS 6"
+const MV_FADE_T  = 9.50;  // empieza fade out de volumen
+const MV_END_T   = 11.00; // fin → transición al splash
 
 // Pool de personas mapeado a cada beat
 const mvPeoplePool = [];
 let mvLastPi = -1;
 MV_BEATS.forEach((t, i) => {
   let pi;
-  if(i < 6) { pi = i % MV_PEOPLE.length; } // fase lenta: uno por persona en orden
-  else { do { pi = Math.floor(Math.random()*MV_PEOPLE.length); } while(pi===mvLastPi); }
+  // Primeros 7 beats (fases 0 y 1): cada persona en orden, pausado y épico
+  if(i < 7) {
+    pi = i % MV_PEOPLE.length;
+  } else {
+    // Resto: aleatorio sin repetir el anterior
+    do { pi = Math.floor(Math.random()*MV_PEOPLE.length); } while(pi===mvLastPi);
+  }
   mvLastPi = pi;
-  mvPeoplePool.push({...MV_PEOPLE[pi], t, showSfx: i < 10});
+  mvPeoplePool.push({...MV_PEOPLE[pi], t, showSfx: i < 12});
 });
 
 mvPeoplePool.forEach((p,i)=>{
@@ -2513,20 +2531,62 @@ function mvShowPanel(idx){
   const el=mvPanelEls[idx]; if(!el)return;
   const p=mvPeoplePool[idx];
   gsap.set(el,{visibility:'visible'});
-  const sfx=el.querySelector('.mv-p-sfx');
+
+  // Calcular duración del panel
+  const msLeft = idx < mvPeoplePool.length-1 ? (mvPeoplePool[idx+1].t - p.t)*1000 : 300;
+  const isSlow  = msLeft > 400;   // fases 0 y 1
+  const isMid   = msLeft > 100 && msLeft <= 400;
+  const isFast  = msLeft <= 100 && msLeft > 40;
+  const isBlur  = msLeft <= 40;
+
+  // ── Animación del nombre según fase ──
+  const nameEl = el.querySelector('.mv-p-name');
+  if(nameEl){
+    if(isSlow){
+      // Entrada épica: el nombre entra con scale grande y se asienta
+      gsap.fromTo(nameEl,
+        {scale:1.35, opacity:0, y: -30},
+        {scale:1, opacity:1, y:0, duration:0.22, ease:'power3.out'});
+    } else if(isMid){
+      gsap.fromTo(nameEl,
+        {scale:1.15, opacity:0},
+        {scale:1, opacity:1, duration:0.1, ease:'power2.out'});
+    } else {
+      // Rápido/blur: aparece instantáneo
+      gsap.set(nameEl, {scale:1, opacity:1});
+    }
+  }
+
+  // ── SFX ──
+  const sfx = el.querySelector('.mv-p-sfx');
   if(sfx){
     const rot=parseFloat((sfx.style.transform.match(/-?\d+(\.\d+)?/)||['0'])[0]);
-    gsap.fromTo(sfx,{scale:0},{scale:1,duration:0.18,ease:'back.out(3)',rotation:rot});
+    gsap.fromTo(sfx,{scale:0},{scale:1, duration:isSlow?0.22:0.12, ease:'back.out(3)', rotation:rot});
   }
-  const msLeft = idx<mvPeoplePool.length-1 ? (mvPeoplePool[idx+1].t - p.t)*1000 : 300;
-  if(msLeft<50) gsap.fromTo(el,{x:(Math.random()-.5)*14,y:(Math.random()-.5)*14},{x:0,y:0,duration:0.05,ease:'power3.out'});
-  const isEpi=msLeft<=35, isSlow=idx<7;
-  if(isSlow&&idx%2===0) mvDoFlash(0.5,50);
-  else if(isEpi) mvDoFlash(0.75,12);
-  else if(idx%5===0) mvDoFlash(0.6,18);
-  if(!isSlow&&idx%3===0) mvDoFlash(0.12,10,p.col);
-  mvActive=true; mvSpeed=Math.max(0,1-(msLeft/200));
-  mvCurPanel=el;
+
+  // ── Shake en fases rápidas ──
+  if(isFast || isBlur){
+    const shk = isBlur ? 22 : 12;
+    gsap.fromTo(el,
+      {x:(Math.random()-.5)*shk, y:(Math.random()-.5)*shk},
+      {x:0, y:0, duration:0.04, ease:'power3.out'});
+  }
+
+  // ── Flashes ──
+  if(isSlow && idx%2===0)      mvDoFlash(0.55, 80);
+  else if(isSlow)               mvDoFlash(0.30, 60);
+  else if(isMid && idx%3===0)   mvDoFlash(0.50, 30);
+  else if(isFast)               mvDoFlash(0.70, 14);
+  else if(isBlur)               mvDoFlash(0.85, 8);
+
+  // Flash de color del personaje cada pocos paneles
+  if(!isSlow && idx%4===0) mvDoFlash(0.18, 12, p.col);
+
+  // ── Speed de partículas Three.js ──
+  mvActive = true;
+  mvSpeed = isSlow ? 0.02 : isMid ? 0.2 : isFast ? 0.6 : 1.0;
+
+  mvCurPanel = el;
 }
 
 function mvSyncLoop(){
