@@ -2296,7 +2296,7 @@ function initMarvelAudio() {
   function createMvPlayer() {
     mvYT = new YT.Player('yt-marvel-audio', {
       videoId: MARVEL_AUDIO_ID,
-      playerVars: { autoplay: 0, controls: 0, loop: 0, mute: 0, start: 0, playsinline: 1 },
+      playerVars: { autoplay: 0, controls: 0, loop: 0, mute: 0, start: 1, end: 12, playsinline: 1 },
       events: {
         onReady: function(e) {
           mvYTReady = true;
@@ -2423,26 +2423,38 @@ function mvDoFlash(i=0.9,ms=15,c='#fff'){
 const mvStage=document.getElementById('mv-flip-stage');
 const mvPanelEls=[];
 
-// Timestamps exactos sincronizados al audio Marvel Comics Intro (Ok5PXdmQV-s)
-// Estructura real del audio: 8 golpes lentos → acelera progresivamente → blur épico → flash blanco → logo
+// ════════════════════════════════════════════════════════════
+// TIMESTAMPS — audio va de 1s a 12s del video (11s totales)
+// Los tiempos aquí son RELATIVOS al inicio de reproducción (t=0 = segundo 1 del video)
+//
+// Estructura del Marvel Comics Intro en ese rango:
+//   0.0s–3.5s  → 7 golpes lentos y pesados  (~0.5s cada uno)
+//   3.5s–6.5s  → aceleración progresiva
+//   6.5s–9.0s  → blur frenético
+//   9.0s–9.8s  → flash blanco + logo
+//   9.8s–11s   → fade out de volumen (logo en pantalla)
+// ════════════════════════════════════════════════════════════
 const MV_BEATS = [
-  // Fase 1: golpes lentos (un panel cada ~0.52s)
-  0.00, 0.52, 1.04, 1.56, 2.08, 2.60,
-  // Fase 2: se acelera (~0.28s)
-  3.00, 3.28, 3.56, 3.84,
-  // Fase 3: más rápido (~0.18s)
-  4.05, 4.23, 4.41, 4.59, 4.77, 4.95,
-  // Fase 4: muy rápido (~0.10s)
-  5.08, 5.18, 5.28, 5.38, 5.48, 5.58, 5.68, 5.78,
-  // Fase 5: frenético (~0.06s)
-  5.86, 5.92, 5.98, 6.04, 6.10, 6.16, 6.22, 6.28,
-  6.34, 6.40, 6.46, 6.52, 6.58, 6.64, 6.70, 6.76,
-  // Fase 6: blur máximo (~0.03s)
-  6.80, 6.83, 6.86, 6.89, 6.92, 6.95, 6.98, 7.01,
-  7.04, 7.07, 7.10, 7.13, 7.16, 7.19, 7.22, 7.25,
-  7.28, 7.31, 7.34, 7.37, 7.40, 7.43, 7.46, 7.49,
+  // Fase 1: golpes lentos (~0.52s cada uno) — 7 golpes
+  0.00, 0.52, 1.04, 1.56, 2.08, 2.60, 3.12,
+  // Fase 2: aceleración moderada (~0.30s)
+  3.42, 3.72, 4.02, 4.32,
+  // Fase 3: más rápido (~0.20s)
+  4.52, 4.72, 4.92, 5.12, 5.32, 5.52,
+  // Fase 4: rápido (~0.12s)
+  5.64, 5.76, 5.88, 6.00, 6.12, 6.24, 6.36, 6.48,
+  // Fase 5: frenético (~0.07s)
+  6.55, 6.62, 6.69, 6.76, 6.83, 6.90, 6.97, 7.04,
+  7.11, 7.18, 7.25, 7.32, 7.39, 7.46, 7.53, 7.60,
+  // Fase 6: blur máximo (~0.04s)
+  7.64, 7.68, 7.72, 7.76, 7.80, 7.84, 7.88, 7.92,
+  7.96, 8.00, 8.04, 8.08, 8.12, 8.16, 8.20, 8.24,
+  8.28, 8.32, 8.36, 8.40, 8.44, 8.48, 8.52, 8.56,
+  8.60, 8.64, 8.68, 8.72, 8.76, 8.80, 8.84, 8.88,
 ];
-const MV_LOGO_T = 7.62; // flash blanco → logo
+const MV_LOGO_T  = 9.00;  // flash blanco → logo "LOS 6"
+const MV_FADE_T  = 9.80;  // empieza fade out de volumen
+const MV_END_T   = 11.00; // fin total → transición al splash
 
 // Pool de personas mapeado a cada beat
 const mvPeoplePool = [];
@@ -2494,7 +2506,7 @@ mvPeoplePool.forEach((p,i)=>{
 });
 
 // ── Motor de sincronización: requestAnimationFrame como reloj maestro ──
-let mvStartTime=null, mvCurPanel=null, mvIsRunning=false, mvRafId=null, mvLogoDone=false;
+let mvStartTime=null, mvCurPanel=null, mvIsRunning=false, mvRafId=null, mvLogoDone=false, mvFadeStarted=false, mvEndDone=false;
 
 function mvShowPanel(idx){
   if(mvCurPanel) gsap.set(mvCurPanel,{visibility:'hidden'});
@@ -2506,10 +2518,9 @@ function mvShowPanel(idx){
     const rot=parseFloat((sfx.style.transform.match(/-?\d+(\.\d+)?/)||['0'])[0]);
     gsap.fromTo(sfx,{scale:0},{scale:1,duration:0.18,ease:'back.out(3)',rotation:rot});
   }
-  // Calcular duración del panel actual
   const msLeft = idx<mvPeoplePool.length-1 ? (mvPeoplePool[idx+1].t - p.t)*1000 : 300;
   if(msLeft<50) gsap.fromTo(el,{x:(Math.random()-.5)*14,y:(Math.random()-.5)*14},{x:0,y:0,duration:0.05,ease:'power3.out'});
-  const isEpi=msLeft<=35, isSlow=idx<6;
+  const isEpi=msLeft<=35, isSlow=idx<7;
   if(isSlow&&idx%2===0) mvDoFlash(0.5,50);
   else if(isEpi) mvDoFlash(0.75,12);
   else if(idx%5===0) mvDoFlash(0.6,18);
@@ -2521,6 +2532,7 @@ function mvShowPanel(idx){
 function mvSyncLoop(){
   if(!mvIsRunning) return;
   const elapsed=(performance.now()-mvStartTime)/1000;
+
   // Disparar cada panel en su timestamp exacto
   for(let i=0;i<mvPeoplePool.length;i++){
     if(!mvPeoplePool[i]._fired && elapsed>=mvPeoplePool[i].t){
@@ -2528,12 +2540,29 @@ function mvSyncLoop(){
       mvShowPanel(i);
     }
   }
-  // Disparar logo en su timestamp
+
+  // Fade out de volumen suave en los últimos ~1.2s
+  if(!mvFadeStarted && elapsed>=MV_FADE_T){
+    mvFadeStarted=true;
+    const fadeDur = (MV_END_T - MV_FADE_T) * 1000; // ms
+    const fadeStep = 50; // cada 50ms
+    const steps = fadeDur / fadeStep;
+    let step = 0;
+    const fadeInt = setInterval(function(){
+      step++;
+      const vol = Math.max(0, Math.round(100 * (1 - step/steps)));
+      try { if(mvYT) mvYT.setVolume(vol); } catch(e){}
+      if(step >= steps) clearInterval(fadeInt);
+    }, fadeStep);
+  }
+
+  // Disparar logo
   if(!mvLogoDone && elapsed>=MV_LOGO_T){
     mvLogoDone=true; mvIsRunning=false;
     cancelAnimationFrame(mvRafId);
     mvStartLogo(); return;
   }
+
   mvRafId=requestAnimationFrame(mvSyncLoop);
 }
 
@@ -2552,6 +2581,8 @@ function mvStartLogo(){
 }
 
 function mvAnimateLogo(){
+  // El logo dura exactamente desde MV_LOGO_T hasta MV_END_T
+  const logoHoldDur = MV_END_T - MV_LOGO_T; // ~2s
   const tl=gsap.timeline({onComplete: mvDismiss});
   tl
     .to([document.getElementById('mv-scanlines'),document.getElementById('mv-vignette')],{opacity:1,duration:0.01},0)
@@ -2569,11 +2600,11 @@ function mvAnimateLogo(){
     .add(()=>{let a=0;const id=setInterval(()=>{a=Math.min(0.05,a+0.003);mvDrawRays(a);if(a>=0.05)clearInterval(id);},16);},0.4)
     .add(()=>{
       mvActive=true;
-      gsap.to(mvThreeCanvas,{opacity:0.18,duration:2});
-      gsap.to({v:0},{v:0.05,duration:3,onUpdate:function(){mvSpeed=this.targets()[0].v;}});
+      gsap.to(mvThreeCanvas,{opacity:0.18,duration:1.2});
+      gsap.to({v:0},{v:0.05,duration:2,onUpdate:function(){mvSpeed=this.targets()[0].v;}});
     },1.0)
-    // Esperar 2.5s en el logo y luego salir
-    .to({},{duration:2.5},1.5);
+    // El logo se queda en pantalla exactamente hasta MV_END_T
+    .to({},{duration: Math.max(0.5, logoHoldDur - 1.5)}, 1.5);
 }
 
 // ── Transición: intro → splash ──
