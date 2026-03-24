@@ -208,6 +208,7 @@
         position:relative;
         width:min(88vw,820px);
         aspect-ratio:16/10;
+        background:#050505;
     }
     /* Borde dorado doble */
     #foto-frame::before {
@@ -234,7 +235,7 @@
     .fc-corner.br{bottom:-14px;right:-14px;transform:scale(-1,-1);}
     #foto-img {
         width:100%;height:100%;
-        object-fit:cover;
+        object-fit:contain;
         display:block;
         filter:sepia(0.12) contrast(1.05);
     }
@@ -986,7 +987,7 @@
         #splash {
             position: fixed; inset: 0;
             z-index: 100;
-            display: flex;
+            display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -3043,16 +3044,6 @@ function startVideoTimer(){
   }, 500);
 }
 
-function showSplash(){
-  if(ytMainVideoTimer){ clearInterval(ytMainVideoTimer); ytMainVideoTimer=null; }
-  try { if(ytMainVideo) ytMainVideo.stopVideo(); } catch(e){}
-  const vs = document.getElementById('video-screen');
-  gsap.to(vs,{opacity:0, duration:0.8, ease:'power2.inOut', onComplete:()=>{
-    vs.style.display = 'none';
-    showExcepcion();
-  }});
-}
-
 // ══════════════════════════════════════════════
 // FLUJO: video → excepción → foto → splash
 // Cada pantalla tiene su propia función, sin solapamientos
@@ -3109,13 +3100,15 @@ function showFoto() {
 
 document.getElementById('foto-continue').addEventListener('click', function() {
   this.style.pointerEvents = 'none';
-  const fs = document.getElementById('foto-screen');
-  gsap.to([fs, this], {opacity:0, duration:0.8, ease:'power2.inOut', onComplete:()=>{
-    fs.style.display = 'none';
+  const fs  = document.getElementById('foto-screen');
+  const btn = this;
+  gsap.to([fs, btn], {opacity:0, duration:0.8, ease:'power2.inOut', onComplete:()=>{
+    fs.style.display  = 'none';
+    btn.style.display = 'none';
     const sp = document.getElementById('splash');
-    sp.style.display = 'flex';
-    sp.style.opacity = '0';
-    requestAnimationFrame(()=>requestAnimationFrame(()=>{ sp.style.opacity='1'; }));
+    sp.style.display  = 'flex';
+    sp.style.opacity  = '0';
+    gsap.to(sp, {opacity:1, duration:1.2, ease:'power2.out'});
   }});
 });
 
